@@ -1,0 +1,10 @@
+#player {
+	grid-area: player;
+
+	background-color: var(--color-foreground);
+}
+
+#player > webview {
+	width: 100%;
+	height: 100%
+}

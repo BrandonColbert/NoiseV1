@@ -1,0 +1,85 @@
+@import "./dropdown.css";
+@import "./titlebar.css";
+
+:root {
+	/* Light Mode */
+	/* --color-primary: lightsalmon;
+	--color-primary-variant: salmon;
+	--color-accent: powderblue;
+	--color-accent-variant: lightblue;
+	--color-background: white;
+	--color-foreground: snow;
+	--color-foreground-variant: lavenderblush;
+	--color-text: black; */
+
+	/* Dark Mode */
+	--color-primary: darkslateblue;
+	--color-primary-variant: slateblue;
+	--color-accent: firebrick;
+	--color-accent-variant: crimson;
+	--color-background: #292e3e;
+	--color-foreground: #252b3d;
+	--color-foreground-variant: #2c3348;
+	--color-text: #e6dbdb;
+}
+
+body {
+	--titlebar-height: 28px;
+
+	width: 100%;
+	height: 100%;
+
+	margin: 0;
+	border: none;
+	padding: 0;
+
+	overflow: hidden;
+
+	background-color: var(--color-background);
+
+	font-family: 'Noto Sans', sans-serif;
+	color: var(--color-text);
+}
+
+.accumulatorSource {
+	display: none;
+	visibility: hidden;
+	position: absolute;
+	pointer-events: none;
+
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+}
+
+[type=text] {
+	color: var(--color-text);
+}
+
+::placeholder {
+	color: var(--color-text);
+	filter: opacity(70%);
+}
+
+::-webkit-scrollbar {
+	padding: 0px;
+}
+
+::-webkit-scrollbar-track {	
+	border: 6px solid transparent;
+	border-radius: 50px;
+
+	background: var(--color-foreground);
+	background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb {
+	border-radius: 50px;
+
+	background: var(--color-foreground);
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-foreground-variant);
+}

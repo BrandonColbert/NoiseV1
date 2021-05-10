@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "CommonJS",
+		"moduleResolution": "node",
+		"outDir": "js",
+		"baseUrl": ".",
+		"paths": {
+			"*": ["node_modules/*"]
+		},
+		"inlineSourceMap": true,
+		"inlineSources": true,
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"esModuleInterop": true,
+		"experimentalDecorators": true,
+		"removeComments": false,
+		"strict": false
+	},
+	"include": [
+		"src/**/*"
+	]
+}

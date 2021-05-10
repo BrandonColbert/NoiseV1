@@ -1,0 +1,78 @@
+.titlebar {
+	--button-width: 46px;
+
+	height: var(--titlebar-height);
+	
+	display: block;
+}
+
+.titlebar > :nth-child(1) {
+	position: fixed;
+
+	width: 100%;
+	height: var(--titlebar-height);
+
+	margin: 5px 5px 0px 5px;
+
+	-webkit-app-region: drag;
+}
+
+.titlebar > :nth-child(2) {
+	position: fixed;
+
+	top: 0;
+	right: 0;
+
+	display: grid;
+	grid-template:
+		"minimize restore close" var(--titlebar-height)
+		/ var(--button-width) var(--button-width) var(--button-width);
+
+	-webkit-app-region: no-drag;
+}
+
+.titlebar > :nth-child(2) > button {
+	margin: 0;
+	border: none;
+	padding: 0;
+	outline: none;
+
+	user-select: none;
+	cursor: pointer;
+
+	background-color: transparent;
+	background-size: var(--button-width) var(--titlebar-height);
+}
+
+.titlebar > :nth-child(2) > button:hover {
+	background-color: var(--color-foreground);
+}
+
+.titlebar > :nth-child(2) > button:active {
+	background-color: var(--color-foreground-variant);
+}
+
+.titlebar > :nth-child(2) > ::before {
+	content: "";
+
+	display: inline-block;
+	width: var(--button-width);
+	height: var(--titlebar-height);
+
+	background-color: var(--color-text);
+}
+
+.titlebar > :nth-child(2) > :nth-child(1)::before {
+	mask: url("../resources/icons/remove-24px.svg") center no-repeat;
+	-webkit-mask: url("../resources/icons/remove-24px.svg") center no-repeat;
+}
+
+.titlebar > :nth-child(2) > :nth-child(2)::before {
+	mask: url("../resources/icons/crop_square-24px.svg") center no-repeat;
+	-webkit-mask: url("../resources/icons/crop_square-24px.svg") center no-repeat;
+}
+
+.titlebar > :nth-child(2) > :nth-child(3)::before {
+	mask: url("../resources/icons/close-24px.svg") center no-repeat;
+	-webkit-mask: url("../resources/icons/close-24px.svg") center no-repeat;
+}
