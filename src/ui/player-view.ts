@@ -33,7 +33,7 @@ export default class PlayerView extends Player {
 	 * @returns Resolved when loading finishes
 	 */
 	async goto(url: string): Promise<void> {
-		await new Promise(resolve => {
+		await new Promise<void>(resolve => {
 			this.#viewElement.addEventListener(
 				"did-stop-loading",
 				e => {

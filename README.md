@@ -1,2 +1,2 @@
 # Noise
- Customizable playlist creator for online videos.
+Customizable playlist creator for online videos.
