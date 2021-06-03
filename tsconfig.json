@@ -1,19 +1,23 @@
 {
 	"compilerOptions": {
-		"target": "ESNext",
+		"target": "ES2020",
 		"module": "CommonJS",
-		"moduleResolution": "node",
-		"outDir": "js",
+		"moduleResolution": "Node",
+		"rootDir": "src",
+		"outDir": "app/js",
 		"baseUrl": ".",
 		"paths": {
 			"*": ["node_modules/*"]
 		},
+		"allowSyntheticDefaultImports": true,
 		"inlineSourceMap": true,
 		"inlineSources": true,
 		"noImplicitAny": true,
+		"noImplicitThis": true,
 		"noImplicitReturns": true,
 		"esModuleInterop": true,
 		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
 		"removeComments": false,
 		"strict": false
 	},

@@ -1,0 +1,15 @@
+@import "../style.css";
+@import "player.css";
+@import "toolbar.css";
+@import "playlist.css";
+
+#playback {
+	width: 100%;
+	height: calc(100% - var(--titlebar-height));
+
+	display: grid;
+	grid:
+		"player  playlist" 1fr
+		"toolbar playlist" 100px
+		/ 1fr 400px;
+}

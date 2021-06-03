@@ -1,15 +1,9 @@
-import Stylist from "../utils/stylist.js"
-
 /**
  * Dropdown menu
  */
-export default class Dropdown {
-	static style: Style = {
-		dropdown: "dropdown"
-	}
-
+export class Dropdown {
 	/** Element representing this dropdown */
-	readonly element: HTMLElement
+	public readonly element: HTMLElement
 
 	private constructor() {
 		this.element = document.createElement("div")
@@ -21,7 +15,7 @@ export default class Dropdown {
 	/**
 	 * Close this menu
 	 */
-	close(): void {
+	public close(): void {
 		window.removeEventListener("keydown", this.#onKey)
 		this.element.removeEventListener("blur", this.#onBlur)
 		this.element.remove()
@@ -53,7 +47,7 @@ export default class Dropdown {
 	 * @param items Menu items
 	 * @param options Menu configuration options
 	 */
-	static show(items: Item[], options: Options): Dropdown {
+	public static show(items: Dropdown.Item[], options: Dropdown.Options = {}): Dropdown {
 		let dropdown = new Dropdown()
 		let {element} = dropdown
 
@@ -78,7 +72,7 @@ export default class Dropdown {
 		//Style
 		let {style} = element
 
-		Stylist.add(element, Dropdown.style, "dropdown")
+		element.classList.add("dropdown")
 
 		if(options.hasOwnProperty("height")) {
 			style.overflowY = "auto"
@@ -91,14 +85,14 @@ export default class Dropdown {
 			style.left = x.toString()
 			style.top = y.toString()
 		} else if(options.hasOwnProperty("target")) {
-			let [width, height] = [element.clientWidth, element.clientHeight / items.length]
+			let [width, height] = [element.clientWidth, element.clientHeight / items.length * (items.length + 1)]
 			let rect = options.target.getBoundingClientRect()
 			let [left, top] = [rect.x, rect.bottom]
 			let [right, bottom] = [left + width, top + height]
 			let [windowWidth, windowHeight] = [window.innerWidth, window.innerHeight]
 
-			style.left = `${right > windowWidth ? left + rect.width - width : left}px`
-			style.top = `${bottom > windowHeight ? rect.top - height : top}px`
+			style.left = `${(right > windowWidth ? left - width : left) + window.scrollX}px`
+			style.top = `${(bottom > windowHeight ? top - height : top) + window.scrollY}px`
 		} else {
 			style.left = "0px"
 			style.top = "0px"
@@ -111,35 +105,35 @@ export default class Dropdown {
 	}
 }
 
-/**
- * Dropdown menu item
- */
-interface Item {
-	/** Text displayed in this item's section */
-	text: string
+export default Dropdown
 
-	/** Called when this item is clicked */
-	callback?: (event: MouseEvent) => void
-}
-
-/**
- * Alters a dropdowns appearance
- */
-interface Options {
-	/** Max menu height in pixels before scrolling is enabled */
-	height?: number | string
-
-	/** Position of the menu on the screen in pixels */
-	position?: [number | string, number | string]
-
+export namespace Dropdown {
 	/**
-	 * Element to display the menu under
-	 * 
-	 * Has no effect if position is specified
+	 * Dropdown menu item
 	 */
-	target?: Element
-}
-
-interface Style {
-	dropdown: string
+	export interface Item {
+		/** Text displayed in this item's section */
+		text: string
+	
+		/** Called when this item is clicked */
+		callback?: (event: MouseEvent) => void
+	}
+	
+	/**
+	 * Alters a dropdowns appearance
+	 */
+	export interface Options {
+		/** Max menu height in pixels before scrolling is enabled */
+		height?: number | string
+	
+		/** Position of the menu on the screen in pixels */
+		position?: [number | string, number | string]
+	
+		/**
+		 * Element to display the menu under
+		 * 
+		 * Has no effect if position is specified
+		 */
+		target?: Element
+	}
 }

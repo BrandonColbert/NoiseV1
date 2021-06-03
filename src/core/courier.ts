@@ -1,0 +1,153 @@
+import {promises as fs} from "fs"
+import path from "path"
+import TextUtils from "../utils/textUtils.js"
+import Graph from "./nodes/graph.js"
+import Noise from "./noise.js"
+import Helper from "./helper.js"
+import RequestNode from "../core/nodes/requestNode.js"
+import MediaUrlNode from "../core/nodes/mediaUrlNode.js"
+import MediaTitleNode from "../core/nodes/mediaTitleNode.js"
+
+type Nodes = {[id: string]: Graph.Node.Data}
+
+/**
+ * Retrieves a url for the page containing the media requested from a query
+ */
+export class Courier extends Helper {
+	public readonly id: string
+	public name: string
+
+	protected constructor(id: string) {
+		super()
+		this.id = id
+		this.graph.registerNodeType("request", RequestNode, "courier")
+		this.graph.registerNodeType("media-title", MediaTitleNode, "courier")
+		this.graph.registerNodeType("media-url", MediaUrlNode, "courier")
+	}
+
+	protected get path(): string {
+		return `${Noise.rootDirectory}\\config\\couriers\\${this.id}.json`
+	}
+
+	protected get info(): Courier.Info {
+		return {
+			name: this.name,
+			nodes: this.graph.nodeData
+		}
+	}
+
+	protected set info(value: Courier.Info) {
+		this.name = value.name
+		this.graph.nodeData = value.nodes
+	}
+
+	/**
+	 * @param query Query to find media with
+	 * @returns Media found based on the query
+	 */
+	public async find(query: string): Promise<Courier.Result> {
+		//Prepare for propogation
+		for(let node of this.graph)
+			if(node instanceof RequestNode)
+				node.setInput("query", query)
+
+		//Propogate special nodes
+		for(let node of this.graph)
+			if(node instanceof RequestNode)
+				await node.propogate()
+
+		//Find the first completed title and url node
+		let completedNodes = [...this.graph].filter(n => n.status == Graph.Node.Status.Complete)
+		let titleNode = completedNodes.find(n => n instanceof MediaTitleNode)
+		let urlNode = completedNodes.find(n => n instanceof MediaUrlNode)
+
+		//Return their input as the result
+		return {
+			title: titleNode?.getInput("title"),
+			url: urlNode?.getInput("url")
+		}
+	}
+
+	public async save(): Promise<void> {
+		await fs.writeFile(
+			this.path,
+			JSON.stringify(this.info, null, "\t"),
+			"utf8"
+		)
+	}
+
+	public static async load(id: string): Promise<Courier> {
+		if(!id)
+			return null
+
+		let courier = new Courier(id)
+		let data = await fs.readFile(courier.path, "utf8")
+
+		courier.info = JSON.parse(data) as Courier.Info
+
+		return courier
+	}
+
+	public static async create(name: string): Promise<Courier>
+	public static async create(id: string, name: string): Promise<Courier>
+	public static async create(par1: string, par2?: string): Promise<Courier> {
+		let id: string = null
+		let name: string = null
+
+		if(par2) {
+			id = par1
+			name = par2
+		} else {
+			name = par1
+			id = encodeURI(TextUtils.simplify(name))
+		}
+
+		if(!name)
+			return null
+
+		let courier = new Courier(id)
+
+		try {
+			await fs.access(courier.path)
+
+			return null
+		} catch {}
+
+		courier.info = {
+			name: name,
+			nodes: {}
+		}
+
+		return courier
+	}
+
+	public static async allIds(): Promise<string[]> {
+		let dirents = await fs.readdir(`${Noise.rootDirectory}\\config\\couriers`, {withFileTypes: true})
+
+		return dirents
+			.filter(d => d.isFile() && path.extname(d.name) == ".json")
+			.map(d => d.name.slice(0, -path.extname(d.name).length))
+	}
+
+	public static async all(): Promise<Courier[]> {
+		let ids = await Courier.allIds()
+		let couriers = await Promise.all(ids.map(async id => Courier.load(id)))
+
+		return couriers
+	}
+}
+
+export default Courier
+
+export namespace Courier {
+	export interface Info {
+		/** User friendly name of the courier */
+		name: string
+		nodes: Nodes
+	}
+
+	export interface Result {
+		url: string
+		title?: string
+	}
+}

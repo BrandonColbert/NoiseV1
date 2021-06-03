@@ -4,15 +4,16 @@
 	"description": "Configurable playlist creator",
 	"author": "Brandon Colbert",
 	"url": "https://brandoncolbert.github.io/projects/noise.html",
-	"license": "GPLv3",
-	"type": "module",
-	"main": "js/main.js",
+	"license": "GPL-3.0-only",
+	"private": true,
+	"main": "app/js/main.js",
 	"scripts": {
 		"build": "tsc",
 		"start": "electron .",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"pack": "electron-builder --dir",
-		"dist": "electron-builder"
+		"dist": "electron-builder",
+		"clean": "rmdir app\\js /S /Q"
 	},
 	"build": {
 		"productName": "Noise",
@@ -21,7 +22,7 @@
 			"target": [
 				"portable"
 			],
-			"icon": "resources/icons/icon.png"
+			"icon": "app/resources/icons/icon.png"
 		},
 		"portable": {
 			"artifactName": "${productName} ${version}.${ext}"
@@ -31,13 +32,16 @@
 			"buildResources": "dist/buildResources"
 		}
 	},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/BrandonColbert/Noise.git"
+	},
 	"devDependencies": {
-		"electron": "^8.2.5",
-		"electron-builder": "^22.7.0"
+		"@types/uuid": "^8.3.0",
+		"electron": "^13.0.1",
+		"electron-builder": "^22.10.5"
 	},
 	"dependencies": {
-		"@cliqz/adblocker-electron": "^1.15.1",
-		"cross-fetch": "^3.0.4",
-		"uuid": "^8.1.0"
+		"uuid": "^8.3.2"
 	}
 }

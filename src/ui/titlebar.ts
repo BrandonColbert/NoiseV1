@@ -1,21 +1,15 @@
 import {remote} from "electron"
-import Stylist from "../utils/stylist.js"
 
 /**
  * Application titlebar
  */
 export default class Titlebar {
-	/** CSS Class to style titlebars with */
-	public static style: Style = {
-		titlebar: "titlebar"
-	}
-
 	/** Element representing this titlebar */
 	public readonly element: HTMLElement
 
 	public constructor() {
 		this.element = document.createElement("div")
-		Stylist.add(this.element, Titlebar.style, "titlebar")
+		this.element.classList.add("titlebar")
 
 		//Drag region
 		this.element.append(document.createElement("div"))
@@ -83,8 +77,4 @@ export default class Titlebar {
 	public close() {
 		remote.getCurrentWindow().close()
 	}
-}
-
-class Style {
-	titlebar: string
 }

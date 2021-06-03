@@ -74,8 +74,12 @@ typings/
 .env.test
 .env*.local
 
-### Noise ###
+# Noise
 /config
+/playlists
+/extensions
 /dist
-/js
+/app/js
 
+# Extra
+.vscode

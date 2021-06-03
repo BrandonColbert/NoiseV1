@@ -1,60 +1,102 @@
-import fs from "fs"
-import {remote} from "electron"
-import Courier from "./courier/courier.js"
-import Player from "./player/player.js"
-import Playlist from "./playlist/playlist.js"
-import Settings from "./settings.js"
-import Replicate from "../utils/replicate.js"
+import {app, remote} from "electron"
+import {promises as fs} from "fs"
 
-/**
- * Manages settings
- */
 export default class Noise {
-	private static _settings: Settings
-
-	/** Directory where configuration info is kept */
-	static get location(): string {
-		return `${process.env.PORTABLE_EXECUTABLE_DIR ?? remote.app.getAppPath()}\\config`
+	/**
+	 * Directory where the executable or project is contained
+	 */
+	public static get rootDirectory(): string {
+		return process.env.PORTABLE_EXECUTABLE_DIR
+			?? app?.getAppPath()
+			?? remote?.app?.getAppPath()
 	}
 
-	static get settings(): Settings {
-		return Replicate.clone(Noise._settings)
+	private static get settingsPath(): string {
+		return `${Noise.rootDirectory}\\config\\settings.json`
 	}
 
-	static async setSettings(value: Settings): Promise<void> {
-		Noise._settings = value
-		await fs.promises.writeFile(Noise.path, JSON.stringify(value, null, "\t"))
+	public static async getSettings(): Promise<Settings> {
+		let data = await fs.readFile(Noise.settingsPath, "utf8")
+		return JSON.parse(data) as Settings
 	}
 
-	/** Path to settings */
-	private static get path(): string {
-		return `${Noise.location}\\settings.json`
+	public static async setSettings(value: Settings): Promise<void> {
+		await fs.writeFile(
+			Noise.settingsPath,
+			JSON.stringify(value, null, "\t"),
+			"utf8"
+		)
 	}
 
-	private static init = (() => {
+	/**
+	 * Applies the configured theme to the current document
+	 */
+	public static async applyTheme(): Promise<void> {
+		//Get theme from settings
+		let settings = await Noise.getSettings()
+		let theme = settings?.theme
+
+		//Do nothing if no theme present
+		if(!theme)
+			return
+
+		let style = document.documentElement.style
+
+		//Modify CSS custom colors according to theme values
+		for(let [key, value] of Object.entries(theme))
+			style.setProperty(`--color-${key}`, value)
+	}
+
+	private static init = (async () => {
 		//Ensure directories exist
-		Array.from([
-			Noise.location,
-			`${Noise.location}\\playlists`,
-			`${Noise.location}\\couriers`,
-			`${Noise.location}\\players`
-		]).forEach(e => {
-			if(fs.existsSync(e))
-				return
+		let paths = Array.from([
+			`${Noise.rootDirectory}\\config`,
+			`${Noise.rootDirectory}\\config\\couriers`,
+			`${Noise.rootDirectory}\\config\\players`,
+			`${Noise.rootDirectory}\\extensions`,
+			`${Noise.rootDirectory}\\playlists`
+		])
 
-			fs.mkdirSync(e)
-		})
+		for(let path of paths) {
+			try {
+				await fs.access(path)
+			} catch {
+				await fs.mkdir(path)
+			}
+		}
 
 		//Ensure settings exists
-		if(!fs.existsSync(Noise.path))
-			fs.writeFileSync(Noise.path, JSON.stringify(Noise.settings))
-
-		Noise._settings = {
-			defaultCourier: "",
-			playlistOrder: [],
-			recency: 5000,
-			thresholdWait: 5,
-			thresholdAbort: 50
+		try {
+			await fs.access(Noise.settingsPath)
+		} catch {
+			await fs.copyFile("app/resources/data/settings.json", Noise.settingsPath)
 		}
 	})()
+}
+
+interface Settings {
+	theme: Theme
+
+	/** Default courier to use when adding a new media query */
+	defaultCourier: string
+
+	/** Duration in milliseconds to remember Accumulator search times */
+	recency: number
+
+	/** Maximum number of Accumulator searches within recency seconds before waiting */
+	thresholdWait: number
+
+	/** Maximum number of Accumulator searches within recency seconds before aborting */
+	thresholdAbort: number
+}
+
+interface Theme {
+	accent: string
+	"accent-variant": string
+	background: string
+	foreground: string
+	"foreground-variant": string
+	primary: string
+	"primary-variant": string
+	text: string
 }

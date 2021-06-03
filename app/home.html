@@ -1,0 +1,44 @@
+<html>
+	<head>
+		<base href="./">
+		<link rel="stylesheet" type="text/css" href="./css/home/style.css">
+		<title>Noise</title>
+	</head>
+	<body>
+		<div id="playback">
+			<webview id="player" class="window" src="about:blank" preload="./js/playerPreload.js"></webview>
+			<div id="toolbar" class="window">
+				<div id="controls">
+					<button id="previous-item"></button>
+					<button id="playpause" data-playing="false"></button>
+					<button id="next-item"></button>
+				</div>
+				<div id="info">
+					<div id="title">Untitled</div>
+					<button id="site">Unknown</button>
+				</div>
+			</div>
+			<div id="playlist" class="window">
+				<div id="selection">
+					<div id="playlists">
+						<button></button>
+						<div>Unselected</div>
+					</div>
+					<button id="options"></button>
+				</div>
+				<div id="entrybar">
+					<button id="add"></button>
+					<div id="query">
+						<input type="text" placeholder="Enter search">
+					</div>
+					<div id="courier">
+						<div>Unselected</div>
+						<div></div>
+					</div>
+				</div>
+				<div id="items"></div>
+			</div>
+		</div>
+		<script>require("./js/pageHome.js")</script>
+	</body>
+</html>

@@ -1,0 +1,16 @@
+{
+	"theme": {
+		"accent": "firebrick",
+		"accent-variant": "crimson",
+		"background": "#292e3e",
+		"foreground": "#252b3d",
+		"foreground-variant": "#2c3348",
+		"primary": "darkslateblue",
+		"primary-variant": "slateblue",
+		"text": "#e6dbdb"
+	},
+	"defaultCourier": "",
+	"recency": 5000,
+	"thresholdWait": 5,
+	"thresholdAbort": 50
+}
