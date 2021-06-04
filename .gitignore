@@ -75,11 +75,13 @@ typings/
 .env*.local
 
 # Noise
-config/
-playlists/
-extensions/
-dist/
+addons/**/build/
 app/js/
+app/resources/addons/*
+config/
+dist/
+extensions/
+playlists/
 
 # Extra
 .vscode/

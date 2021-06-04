@@ -17,6 +17,7 @@ import Noise from "./core/noise.js"
 		minHeight: 350,
 		frame: false,
 		show: false,
+		fullscreenable: false,
 		webPreferences: {
 			zoomFactor: 1 / scale,
 			contextIsolation: false,

@@ -8,12 +8,11 @@
 	"private": true,
 	"main": "app/js/main.js",
 	"scripts": {
-		"build": "tsc",
 		"start": "electron .",
-		"test": "echo \"Error: no test specified\" && exit 1",
+		"build": "tsc && addons\\build.bat",
+		"clean": "rmdir app\\js /S /Q",
 		"pack": "electron-builder --dir",
-		"dist": "electron-builder",
-		"clean": "rmdir app\\js /S /Q"
+		"dist": "electron-builder"
 	},
 	"build": {
 		"productName": "Noise",
@@ -30,7 +29,12 @@
 		"directories": {
 			"output": "dist",
 			"buildResources": "dist/buildResources"
-		}
+		},
+		"files": [
+			"app/",
+			"node_modules/",
+			"package.json"
+		]
 	},
 	"repository": {
 		"type": "git",

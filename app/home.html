@@ -8,14 +8,18 @@
 		<div id="playback">
 			<webview id="player" class="window" src="about:blank" preload="./js/playerPreload.js"></webview>
 			<div id="toolbar" class="window">
+				<div id="info">
+					<button id="site">Unknown</button>
+					<div id="title">Untitled</div>
+				</div>
 				<div id="controls">
 					<button id="previous-item"></button>
 					<button id="playpause" data-playing="false"></button>
 					<button id="next-item"></button>
 				</div>
-				<div id="info">
-					<div id="title">Untitled</div>
-					<button id="site">Unknown</button>
+				<div id="volume">
+					<div data-level="up"></div>
+					<input type="range" min="0" max="1" value="1" step="any">
 				</div>
 			</div>
 			<div id="playlist" class="window">
