@@ -1,0 +1,105 @@
+@import "../style.css";
+
+#content {
+	width: 100%;
+	height: calc(100% - var(--titlebar-height));
+
+	overflow-y: auto;
+}
+
+hr {
+	border-color: var(--color-text);
+	margin: 15px 0px 30px;
+}
+
+.helper-list {
+	--tile-width: 300px;
+	--tile-height: 225px;
+
+	max-width: 100%;
+
+	padding: 50px;
+}
+
+.title {
+	font-size: 40px;
+}
+
+.items {
+	display: grid;
+
+	width: 100%;
+
+	gap: 50px;
+	grid-template-columns: repeat(auto-fill, var(--tile-width));
+	grid-template-rows: repeat(auto-fill, var(--tile-height));
+}
+
+.item {
+	display: flex;
+
+	width: var(--tile-width);
+	height: var(--tile-height);
+
+	align-items: center;
+	justify-content: center;
+
+	border-radius: 10%;
+	border: 3px solid var(--color-primary);
+	background: var(--color-foreground);
+
+	user-select: none;
+	outline: none;
+
+	font-size: 30px;
+}
+
+	.item:hover {
+		border: 3px solid var(--color-primary-variant);
+	}
+
+	.item:active {
+		border: 3px solid var(--color-primary);
+	}
+
+	.item[contenteditable="true"] {
+		border: 3px solid var(--color-accent);
+	}
+
+.item.placeholder {
+	border: 3px dashed var(--color-primary);
+
+	font-size: 60px;
+}
+
+	.item.placeholder:hover {
+		border: 3px dashed var(--color-primary-variant);
+	}
+
+	.item.placeholder:active {
+		border: 3px dashed var(--color-primary);
+	}
+
+#back {
+	--icon-size: 40px;
+	--icon-url: url("app://resources/icons/arrow_back_24dp.svg");
+
+	position: fixed;
+	top: 10px;
+	left: 10px;
+
+	border: none;
+	border-radius: 50%;
+	outline: none;
+
+	cursor: pointer;
+	-webkit-app-region: no-drag;
+}
+
+	#back:hover {
+		background-color: var(--color-foreground);
+	}
+
+	#back:active {
+		background-color: var(--color-foreground-variant);
+	}

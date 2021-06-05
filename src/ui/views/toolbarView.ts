@@ -1,8 +1,8 @@
+import {remote} from "electron"
 import Playlist from "../../core/playlist.js"
 import Courier from "../../core/courier.js"
 import PlaybackView from "./playbackView.js"
 import Volume from "../../utils/volume.js"
-import { remote } from "electron"
 
 export default class ToolbarView implements View {
 	public readonly element: HTMLElement
@@ -38,15 +38,18 @@ export default class ToolbarView implements View {
 		this.volumeSlider.removeEventListener("input", this.onVolumeSliderInput)
 	}
 
-	public async refreshInfo(info?: {item: Playlist.Item, courier: Courier, result: Courier.Result}): Promise<void> {
+	public async refreshInfo(info?: {item: Playlist.Item, result: Courier.Result}): Promise<void> {
 		if(!info) {
-			this.mediaTitle.textContent = "Untitled"
-			this.mediaSite.textContent = "Unknown"
+			this.mediaTitle.style.display = "none";
+			this.mediaSite.style.display = "none";
 			return
 		}
 
+		this.mediaTitle.style.display = null;
+		this.mediaSite.style.display = null;
+
 		this.mediaTitle.textContent = info.result.title ?? info.item.query
-		this.mediaSite.textContent = info.courier.name
+		this.mediaSite.textContent = this.playbackView.playerView.player?.name ?? "?"
 	}
 
 	private refreshVolume(): void {
@@ -76,30 +79,40 @@ export default class ToolbarView implements View {
 	private onVolumeSliderInput = (event: Event) => {
 		let target = event.target as HTMLInputElement
 		Volume.setVolume(target.valueAsNumber)
-		this.playbackView.playerView.element.executeJavaScript(`noise.volume.setVolume(${target.valueAsNumber})`)
+
+		// this.playbackView.playerView.element.executeJavaScript(`noise.volume.setVolume(${target.valueAsNumber})`)
+
+		// for(let webContents of remote.webContents.getAllWebContents()) {
+		// 	webContents.executeJavaScript(`
+		// 		try {
+		// 			noise.volume.setVolume(${target.valueAsNumber})
+		// 			console.log(noise.volume.getVolume())
+		// 		} catch(e) {
+		// 			console.log(e)
+		// 		}
+
+		// 		try {
+		// 			const Voume = require("app/js/utils/volume.js")
+		// 			Volume.setVolume(${target.valueAsNumber})
+		// 			console.log(Volume.getVolume())
+		// 		} catch(e) {
+		// 			console.log(e)
+		// 		}
+		// 	`)
+		// }
 
 		this.refreshVolume()
 	}
 
-	private onMediaSiteClick = (_: Event) => {
-		for(let webContents of remote.webContents.getAllWebContents()) {
-			webContents.openDevTools({mode: "detach"})
-			webContents.executeJavaScript(`
-				try {
-					noise.volume.setVolume(0)
-					console.log(noise.volume.getVolume())
-				} catch(e) {
-					console.log(e)
-				}
+	private onMediaSiteClick = async (_: Event) => {
+		let player = this.playbackView.playerView.player
 
-				try {
-					const Voume = require("app/js/utils/volume.js")
-					Volume.setVolume(0)
-					console.log(Volume.getVolume())
-				} catch(e) {
-					console.log(e)
-				}
-			`)
-		}
+		if(!player)
+			return
+
+		await remote.getCurrentWindow().loadFile(
+			"app/descriptor.html",
+			{hash: `player:${player.id}`
+		})
 	}
 }

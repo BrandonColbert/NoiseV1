@@ -7,6 +7,8 @@
 }
 
 .titlebar > :nth-child(1) {
+	-webkit-app-region: drag;
+
 	position: fixed;
 
 	width: 100%;
@@ -14,10 +16,12 @@
 
 	margin: 5px 5px 0px 5px;
 
-	-webkit-app-region: drag;
+	background: var(--color-background);
 }
 
 .titlebar > :nth-child(2) {
+	-webkit-app-region: no-drag;
+
 	position: fixed;
 
 	top: 0;
@@ -27,8 +31,6 @@
 	grid-template:
 		"minimize restore close" var(--titlebar-height)
 		/ var(--button-width) var(--button-width) var(--button-width);
-
-	-webkit-app-region: no-drag;
 }
 
 .titlebar > :nth-child(2) > button {

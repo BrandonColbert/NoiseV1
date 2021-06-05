@@ -21,46 +21,31 @@
 	}
 
 		#playlists {
-			--icon-size: 34px;
+			--button-size: 40px;
 
 			grid-area: playlists;
 
 			display: grid;
 			grid:
 				"playlists-button playlists-text"
-				/ var(--icon-size) auto;
+				/ var(--button-size) auto;
 			gap: 5px;
 
 			align-self: center;
 		}
 
 			#playlists > button {
-				grid-area: playlists-button;
+				--icon-size: var(--button-size);
+				--icon-url: url("app://resources/icons/menu-24px.svg");
 
-				width: var(--icon-size);
-				height: var(--icon-size);
+				grid-area: playlists-button;
 
 				border: none;
 				border-radius: 50%;
 				outline: none;
 
-				background-color: transparent;
-
 				cursor: pointer;
 			}
-
-				#playlists > button::before {
-					content: "";
-
-					display: inline-block;
-					width: 100%;
-					height: 100%;
-
-					background-color: var(--color-text);
-					background-size: calc(var(--icon-size) * 0.8) calc(var(--icon-size) * 0.8);
-					mask: url("../../resources/icons/menu-24px.svg") center no-repeat;
-					-webkit-mask: url("../../resources/icons/menu-24px.svg") center no-repeat;
-				}
 
 				#playlists > button:hover {
 					background-color: var(--color-foreground);
@@ -95,33 +80,19 @@
 				}
 
 		#options {
-			grid-area: options;
+			--icon-size: 36px;
+			--icon-url: url("app://resources/icons/more_vert-24px.svg");
 
-			width: 30px;
-			height: 30px;
+			grid-area: options;
 
 			place-self: center;
 			
 			border: none;
 			border-radius: 50%;
 			outline: none;
-			
-			background-color: transparent;
 
 			cursor: pointer;
 		}
-
-			#options::before {
-				content: "";
-
-				display: inline-block;
-				width: 100%;
-				height: 100%;
-
-				background-color: var(--color-text);
-				mask: url("../../resources/icons/more_vert-24px.svg") center no-repeat;
-				-webkit-mask: url("../../resources/icons/more_vert-24px.svg") center no-repeat;
-			}
 
 			#options:hover {
 				background-color: var(--color-foreground);
@@ -187,7 +158,7 @@
 			}
 
 		#courier {
-			--icon-size: 30px;
+			--button-size: 24px;
 
 			grid-area: courier;
 
@@ -200,7 +171,7 @@
 			display: grid;
 			grid:
 				"courier-text courier-icon"
-				/ auto var(--icon-size);
+				/ auto var(--button-size);
 			gap: 5px;
 
 			background-color: var(--color-foreground);
@@ -225,25 +196,13 @@
 			}
 
 			#courier > :nth-child(2) {
-				grid-area: courier-icon;
+				--icon-size: var(--button-size);
+				--icon-url: url("app://resources/icons/arrow_drop_down-24px.svg");
 
-				width: var(--icon-size);
-				height: var(--icon-size);
+				grid-area: courier-icon;
 
 				place-self: center;
 			}
-
-				#courier > :nth-child(2)::before {
-					content: "";
-
-					display: inline-block;
-					width: 100%;
-					height: 100%;
-
-					background-color: var(--color-text);
-					mask: url("../../resources/icons/arrow_drop_down-24px.svg") center no-repeat;
-					-webkit-mask: url("../../resources/icons/arrow_drop_down-24px.svg") center no-repeat;
-				}
 
 	#items {
 		grid-area: items;

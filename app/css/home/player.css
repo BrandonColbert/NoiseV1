@@ -6,3 +6,7 @@
 
 	background-color: var(--color-foreground);
 }
+
+	#player[src="about:blank"] {
+		pointer-events: none;
+	}

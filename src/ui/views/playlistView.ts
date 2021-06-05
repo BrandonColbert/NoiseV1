@@ -198,7 +198,9 @@ export default class PlaylistView implements View {
 
 				await this.setPlaylist(playlists[playlists.length - 1])
 			}},
-			{text: "View helpers"},
+			{text: "View helpers", callback: async () => {
+				await remote.getCurrentWindow().loadFile("app/helpers.html")
+			}},
 			{text: "Edit settings"},
 			{text: "Inspect player", callback: () => this.playbackView.playerView.element.openDevTools()}
 		], {target: event.target as Element})

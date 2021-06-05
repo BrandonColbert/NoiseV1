@@ -159,6 +159,32 @@ export class Player extends Helper {
 		)
 	}
 
+	public async delete(): Promise<void> {
+		await fs.unlink(this.path)
+	}
+
+	public async duplicate(): Promise<Player> {
+		let players = await Player.all()
+		let names = new Set<string>(players.map(p => p.name))
+
+		let name: string = null
+		let index = 0
+
+		do {
+			++index
+			name = `${this.name} - Copy (${index})`
+		} while(names.has(name))
+
+		let info = JSON.parse(JSON.stringify(this.info)) as Player.Info
+		info.name = name
+
+		let player = new Player(Generate.uuid())
+		player.info = info
+		await player.save()
+
+		return player
+	}
+
 	private async execute<T = any>(code: string): Promise<T> {
 		return await this.view.executeJavaScript(`(() => {${code}})()`, true) as T
 	}
@@ -175,27 +201,42 @@ export class Player extends Helper {
 	 * @param view Webview instance
 	 */
 	public static async for(view: WebviewTag): Promise<Player> {
+		let players = await Player.all()
+
+		//Find first matching player
+		let player = players.find(p => p.urlRegex.test(view.getURL()))
+
+		if(!player)
+			return null
+
+		//Associate with webview
+		player.view = view
+
+		return player
+	}
+
+	public static async allIds(): Promise<string[]> {
 		//Get player filenames
 		let dirents = await fs.readdir(`${Noise.rootDirectory}\\config\\players`, {withFileTypes: true})
 
 		//Transform filenames to ids
-		let ids = dirents
+		return dirents
 			.filter(d => d.isFile() && path.extname(d.name) == ".json")
 			.map(d => d.name.slice(0, -path.extname(d.name).length))
+	}
+
+	public static async all(): Promise<Player[]> {
+		let ids = await Player.allIds()
 
 		//Transform ids to player isntances
-		let players = await Promise.all(ids.map(async id => {
+		return await Promise.all(ids.map(async id => {
 			let player = new Player(id)
 			let data = await fs.readFile(player.path, "utf8")
 
 			player.info = JSON.parse(data) as Player.Info
-			player.view = view
 
 			return player
 		}))
-
-		//Find first matching player
-		return players.find(p => p.urlRegex.test(view.getURL()))
 	}
 }
 

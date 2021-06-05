@@ -76,6 +76,35 @@ export class Courier extends Helper {
 		)
 	}
 
+	public async delete(): Promise<void> {
+		await fs.unlink(this.path)
+	}
+
+	public async duplicate(): Promise<Courier> {
+		let path: string = null
+		let index = 0
+
+		while(true) {
+			++index
+			path = `${this.path.slice(0, -".json".length)}_copy_${index}.json`
+
+			try {
+				await fs.access(path)
+			} catch {
+				break
+			}
+		}
+
+		let info = JSON.parse(JSON.stringify(this.info)) as Courier.Info
+		info.name = `${this.name} - Copy (${index})`
+		
+		let courier = new Courier(`${this.id}_copy_${index}`)
+		courier.info = info
+		await courier.save()
+
+		return courier
+	}
+
 	public static async load(id: string): Promise<Courier> {
 		if(!id)
 			return null

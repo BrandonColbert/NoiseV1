@@ -1,12 +1,36 @@
-import {app, BrowserWindow, screen} from "electron"
+import {app, BrowserWindow, screen, protocol} from "electron"
 import {promises as fs} from "fs"
+import path from "path"
 import Noise from "./core/noise.js"
+
+const AppScheme: Electron.CustomScheme = {
+	scheme: "app",
+	privileges: {
+		standard: true,
+		secure: true,
+		supportFetchAPI: true,
+		corsEnabled: true,
+		bypassCSP: true
+	}
+}
+
+protocol.registerSchemesAsPrivileged([AppScheme])
 
 //Setup process
 ;(async function(): Promise<void> {
+	//Prepare
 	app.allowRendererProcessReuse = true
 	await app.whenReady()
 
+	//Special file protocol to app directory
+	protocol.registerFileProtocol(AppScheme.scheme, (request, callback) => {
+		let url = request.url.slice(`${AppScheme.scheme}://`.length);
+		let newUrl = path.normalize(`${__dirname}/../${url}`)
+
+		callback({path: newUrl})
+	})
+
+	//Create window
 	let scale = screen.getPrimaryDisplay().scaleFactor
 
 	let window = new BrowserWindow({
@@ -33,8 +57,21 @@ import Noise from "./core/noise.js"
 	//Display titlebar each time html is loaded
 	window.webContents.on("did-finish-load", () => 
 		window.webContents.executeJavaScript(`
+			const {remote} = require("electron")
 			const {default: Titlebar} = require('./js/ui/titlebar.js')
+
 			new Titlebar().show()
+
+			window.addEventListener("mousedown", event => {
+				switch(event.button) {
+					case 3:
+						remote.getCurrentWindow().webContents.goBack()
+						break
+					case 4:
+						remote.getCurrentWindow().webContents.goForward()
+						break
+				}
+			})
 		`)
 	)
 

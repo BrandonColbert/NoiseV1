@@ -79,14 +79,13 @@ export default class PlaybackView extends Playback implements View {
 		let courier = item.courier ? await Courier.load(item.courier) : this.playlistView.courier
 		let result = await courier.find(item.query)
 
-		await this.toolbarView.refreshInfo({item: item, courier: courier, result: result})
-
 		await this.playerView.navigate(result.url)
 		await this.playerView.player.resume()
 
+		await this.toolbarView.refreshInfo({item: item, result: result})
 		this.toolbarView.element.querySelector<HTMLElement>("#playpause").dataset["playing"] = (await this.playerView.player.isPlaying()).toString()
-		await this.playerView.player.events.on("play", () => this.toolbarView.element.querySelector<HTMLElement>("#playpause").dataset["playing"] = "true")
-		await this.playerView.player.events.on("pause", () => this.toolbarView.element.querySelector<HTMLElement>("#playpause").dataset["playing"] = "false")
-		await this.playerView.player.events.on("end", async () => await this.playNext())
+		this.playerView.player.events.on("play", () => this.toolbarView.element.querySelector<HTMLElement>("#playpause").dataset["playing"] = "true")
+		this.playerView.player.events.on("pause", () => this.toolbarView.element.querySelector<HTMLElement>("#playpause").dataset["playing"] = "false")
+		this.playerView.player.events.on("end", async () => await this.playNext())
 	}
 }
