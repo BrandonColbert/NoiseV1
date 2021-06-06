@@ -4,6 +4,7 @@ import Graph from "./core/nodes/graph.js"
 import Player from "./core/player.js"
 
 let graphElement = document.querySelector<HTMLDivElement>("#graph")
+graphElement.onmouseleave = () => graphElement.onmousemove = null
 graphElement.onmouseup = () => graphElement.onmousemove = null
 graphElement.onmousedown = e => {
 	let [panX, panY] = [
@@ -26,6 +27,7 @@ function createNodeElement(node: Graph.Node): HTMLElement {
 	let element = document.createElement("div")
 	element.classList.add("node")
 
+	element.onmouseleave = () => element.onmousemove = null
 	element.onmouseup = () => element.onmousemove = null
 	element.onmousedown = e => {
 		e.stopPropagation()

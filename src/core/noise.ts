@@ -84,7 +84,7 @@ export namespace Noise {
 		 */
 		public static get resources(): string {
 			if(process.mainModule.filename.indexOf("app.asar") == -1)
-				return "."
+				return "app/resources"
 
 			return path.join(process.resourcesPath, "app/resources")
 		}

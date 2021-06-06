@@ -1,5 +1,3 @@
-export default require("../../resources/addons/volume") as Volume
-
 /**
  * Application-wide volume interface
  */
@@ -17,3 +15,5 @@ interface Volume {
 	 */
 	setVolume(value: number): void
 }
+
+export default require("../../resources/addons/volume") as Volume
