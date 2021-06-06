@@ -18,6 +18,9 @@ protocol.registerSchemesAsPrivileged([AppScheme])
 
 //Setup process
 ;(async function(): Promise<void> {
+	//Ensure config exists
+	await Noise.ensure()
+
 	//Prepare
 	app.allowRendererProcessReuse = true
 	await app.whenReady()
@@ -58,8 +61,10 @@ protocol.registerSchemesAsPrivileged([AppScheme])
 	window.webContents.on("did-finish-load", () => 
 		window.webContents.executeJavaScript(`
 			const {remote} = require("electron")
-			const {default: Titlebar} = require('./js/ui/titlebar.js')
+			const {default: Noise} = require("./js/core/noise.js")
+			const {default: Titlebar} = require("./js/ui/titlebar.js")
 
+			Noise.applyTheme()
 			new Titlebar().show()
 
 			window.addEventListener("mousedown", event => {
@@ -106,22 +111,20 @@ protocol.registerSchemesAsPrivileged([AppScheme])
 	await window.loadFile("app/home.html")
 
 	//Load extensions
-	let extensionPath = `${Noise.rootDirectory}\\extensions`
-
-	for(let dirent of await fs.readdir(extensionPath, {withFileTypes: true})) {
+	for(let dirent of await fs.readdir(Noise.Paths.extensions, {withFileTypes: true})) {
 		if(!dirent.isDirectory()) {
 			console.error(`Extension ${dirent.name} is not a directory!`)
 			continue
 		}
 
 		try {
-			await fs.access(`${extensionPath}/${dirent.name}/package.json`)
+			await fs.access(`${Noise.Paths.extensions}/${dirent.name}/package.json`)
 		} catch {
 			console.error(`Extension '${dirent.name}' is missing package.json!`)
 			continue
 		}
 
-		require(`${extensionPath}/${dirent.name}`)
+		require(`${Noise.Paths.extensions}/${dirent.name}`)
 		console.log(`Loaded extension: ${dirent.name}`)
 	}
 })()

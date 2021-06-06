@@ -63,6 +63,9 @@ export default class PlaybackView extends Playback implements View {
 	}
 
 	public async play(index: number): Promise<void> {
+		if(!this.playlistView.playlist)
+			return
+
 		let items = await this.playlistView.playlist.getItems()
 
 		if(index < 0)

@@ -33,7 +33,11 @@
 		"files": [
 			"app/",
 			"node_modules/",
-			"package.json"
+			"package.json",
+			"LICENSE"
+		],
+		"extraResources": [
+			"app/resources/data/"
 		]
 	},
 	"repository": {

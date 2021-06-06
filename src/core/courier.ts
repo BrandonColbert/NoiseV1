@@ -26,7 +26,7 @@ export class Courier extends Helper {
 	}
 
 	protected get path(): string {
-		return `${Noise.rootDirectory}\\config\\couriers\\${this.id}.json`
+		return `${Courier.path}/${this.id}.json`
 	}
 
 	protected get info(): Courier.Info {
@@ -105,14 +105,22 @@ export class Courier extends Helper {
 		return courier
 	}
 
+	public static get path(): string {
+		return `${Noise.Paths.config}/couriers`
+	}
+
 	public static async load(id: string): Promise<Courier> {
 		if(!id)
 			return null
 
 		let courier = new Courier(id)
-		let data = await fs.readFile(courier.path, "utf8")
 
-		courier.info = JSON.parse(data) as Courier.Info
+		try {
+			let data = await fs.readFile(courier.path, "utf8")
+			courier.info = JSON.parse(data) as Courier.Info
+		} catch {
+			return null
+		}
 
 		return courier
 	}
@@ -151,7 +159,7 @@ export class Courier extends Helper {
 	}
 
 	public static async allIds(): Promise<string[]> {
-		let dirents = await fs.readdir(`${Noise.rootDirectory}\\config\\couriers`, {withFileTypes: true})
+		let dirents = await fs.readdir(Courier.path, {withFileTypes: true})
 
 		return dirents
 			.filter(d => d.isFile() && path.extname(d.name) == ".json")
@@ -166,8 +174,6 @@ export class Courier extends Helper {
 	}
 }
 
-export default Courier
-
 export namespace Courier {
 	export interface Info {
 		/** User friendly name of the courier */
@@ -180,3 +186,5 @@ export namespace Courier {
 		title?: string
 	}
 }
+
+export default Courier

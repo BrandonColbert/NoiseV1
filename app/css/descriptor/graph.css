@@ -1,0 +1,28 @@
+#graph {
+	--pan-x: 0px;
+	--pan-y: 0px;
+	
+	overflow: hidden;
+
+	background: var(--color-foreground);
+}
+
+.node {
+	--x: 0px;
+	--y: 0px;
+
+	position: relative;
+
+	width: 100px;
+	height: 100px;
+
+	top: calc(var(--pan-y) + var(--y));
+	left: calc(var(--pan-x) + var(--x));
+
+	background: var(--color-primary);
+
+	/* display: grid;
+	grid:
+		"name name"
+		"inputs outputs"; */
+}

@@ -27,7 +27,7 @@ export class Player extends Helper {
 	}
 
 	protected get path(): string {
-		return `${Noise.rootDirectory}\\config\\players\\${this.id}.json`
+		return `${Player.path}/${this.id}.json`
 	}
 
 	protected get info(): Player.Info {
@@ -189,6 +189,10 @@ export class Player extends Helper {
 		return await this.view.executeJavaScript(`(() => {${code}})()`, true) as T
 	}
 
+	public static get path(): string {
+		return `${Noise.Paths.config}/players`
+	}
+
 	public static async create(name: string = "New Player"): Promise<Player> {
 		let player = new Player(Generate.uuid())
 		player.name = name
@@ -215,9 +219,25 @@ export class Player extends Helper {
 		return player
 	}
 
+	public static async load(id: string): Promise<Player> {
+		if(!id)
+			return null
+
+		let player = new Player(id)
+
+		try {
+			let data = await fs.readFile(player.path, "utf8")
+			player.info = JSON.parse(data) as Player.Info
+		} catch {
+			return null
+		}
+
+		return player
+	}
+
 	public static async allIds(): Promise<string[]> {
 		//Get player filenames
-		let dirents = await fs.readdir(`${Noise.rootDirectory}\\config\\players`, {withFileTypes: true})
+		let dirents = await fs.readdir(Player.path, {withFileTypes: true})
 
 		//Transform filenames to ids
 		return dirents
@@ -229,18 +249,9 @@ export class Player extends Helper {
 		let ids = await Player.allIds()
 
 		//Transform ids to player isntances
-		return await Promise.all(ids.map(async id => {
-			let player = new Player(id)
-			let data = await fs.readFile(player.path, "utf8")
-
-			player.info = JSON.parse(data) as Player.Info
-
-			return player
-		}))
+		return await Promise.all(ids.map(async id => Player.load(id)))
 	}
 }
-
-export default Player
 
 export namespace Player {
 	export interface Info {
@@ -263,3 +274,5 @@ export namespace Player {
 		end: void
 	}
 }
+
+export default Player

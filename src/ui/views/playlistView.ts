@@ -96,6 +96,9 @@ export default class PlaylistView implements View {
 		if(playlist == null)
 			return
 
+		//Remember selection
+		localStorage.setItem("playlist", playlist.id)
+
 		//Setup new view
 		this.playlistTitle.textContent = await playlist.getName()
 
@@ -118,7 +121,10 @@ export default class PlaylistView implements View {
 		})
 	}
 
-	protected setCourier(value: Courier): void {
+	public setCourier(value: Courier): void {
+		//Remember selection
+		localStorage.setItem("courier", value.id)
+
 		this.courierTitle.textContent = value.name
 		this.#courier = value
 	}
@@ -198,22 +204,23 @@ export default class PlaylistView implements View {
 
 				await this.setPlaylist(playlists[playlists.length - 1])
 			}},
-			{text: "View helpers", callback: async () => {
-				await remote.getCurrentWindow().loadFile("app/helpers.html")
-			}},
+			{text: "View helpers", callback: async () => await remote.getCurrentWindow().loadFile("app/helpers.html")},
 			{text: "Edit settings"},
 			{text: "Inspect player", callback: () => this.playbackView.playerView.element.openDevTools()}
 		], {target: event.target as Element})
 	}
 
 	private async addQueryItem(): Promise<void> {
+		if(!this.playlist)
+			return
+
 		let items = await this.playlist.getItems()
 		items.push({query: this.entrybarQuery.value, courier: this.courier?.id ?? undefined})
 		await this.playlist.setItems(items)
 
 		this.entrybarQuery.value = ""
-		this.playlistElement.exhibit(_ => true)
-		this.playlistElement.ensureVisibility(items.length - 1)
+		this.playlistElement?.exhibit(_ => true)
+		this.playlistElement?.ensureVisibility(items.length - 1)
 	}
 
 	private onEntrybarAddClick = async (_: MouseEvent) => {
@@ -238,7 +245,7 @@ export default class PlaylistView implements View {
 
 	private onEntrybarQueryInput = async (event: InputEvent) => {
 		let input = event.target as HTMLInputElement
-		this.playlistElement.exhibit(item => TextUtils.simplify(item.query).includes(TextUtils.simplify(input.value)))
+		this.playlistElement?.exhibit(item => TextUtils.simplify(item.query).includes(TextUtils.simplify(input.value)))
 	}
 
 	private onCourierSelectionClick = async (event: MouseEvent) => {

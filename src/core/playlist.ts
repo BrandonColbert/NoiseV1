@@ -20,7 +20,7 @@ export class Playlist {
 	}
 
 	private get path(): string {
-		return `${Noise.rootDirectory}\\playlists\\${this.id}.json`
+		return `${Playlist.path}/${this.id}.json`
 	}
 
 	public async getName(): Promise<string> {
@@ -118,6 +118,10 @@ export class Playlist {
 		)
 	}
 
+	public static get path(): string {
+		return `${Noise.Paths.application}/playlists`
+	}
+
 	/**
 	 * Loads a playlist by id
 	 * @param id Id of the playlist
@@ -188,7 +192,7 @@ export class Playlist {
 	 * All existing playlists
 	 */
 	public static async all(): Promise<Playlist[]> {
-		let dirents = await fs.readdir(`${Noise.rootDirectory}\\playlists`, {withFileTypes: true})
+		let dirents = await fs.readdir(Playlist.path, {withFileTypes: true})
 
 		let playlists = dirents
 			.filter(d => d.isFile() && path.extname(d.name) == ".json")
@@ -202,8 +206,6 @@ export class Playlist {
 		return playlists
 	}
 }
-
-export default Playlist
 
 export namespace Playlist {
 	/**
@@ -233,3 +235,5 @@ interface Events {
 	/** Playlist deleted */
 	delete: void
 }
+
+export default Playlist

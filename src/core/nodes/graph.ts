@@ -87,8 +87,6 @@ export class Graph {
 	}
 }
 
-export default Graph
-
 export namespace Graph {
 	export abstract class Node {
 		/** Unique identifier of this node instance */
@@ -346,3 +344,5 @@ interface ConnectionDescription extends FieldDescription {
 interface OptionDescription extends FieldDescription {
 	defaultValue?: string
 }
+
+export default Graph

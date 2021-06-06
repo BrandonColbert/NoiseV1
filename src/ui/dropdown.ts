@@ -105,8 +105,6 @@ export class Dropdown {
 	}
 }
 
-export default Dropdown
-
 export namespace Dropdown {
 	/**
 	 * Dropdown menu item
@@ -137,3 +135,5 @@ export namespace Dropdown {
 		target?: Element
 	}
 }
+
+export default Dropdown

@@ -99,20 +99,6 @@ function addPlayer(player: Player): HTMLDivElement {
 	return item
 }
 
-;(async function() {
-	let couriers = await Courier.all()
-	let players = await Player.all()
-
-	couriers.sort((a, b) => a.name.localeCompare(b.name))
-	players.sort((a, b) => a.name.localeCompare(b.name))
-
-	for(let courier of couriers)
-		addCourier(courier)
-
-	for(let player of players)
-		addPlayer(player)
-})()
-
 ;(document.querySelector("#couriers .item.placeholder") as HTMLElement).onclick = async _ => {
 	let item = addItem(courierItems, "New Courier")
 	let name = await TextUtils.rename(item)
@@ -148,3 +134,17 @@ function addPlayer(player: Player): HTMLDivElement {
 ;(document.querySelector("#content > #back") as HTMLElement).onclick = async _ => {
 	remote.getCurrentWindow().webContents.goBack()
 }
+
+;(async function() {
+	let couriers = await Courier.all()
+	let players = await Player.all()
+
+	couriers.sort((a, b) => a.name.localeCompare(b.name))
+	players.sort((a, b) => a.name.localeCompare(b.name))
+
+	for(let courier of couriers)
+		addCourier(courier)
+
+	for(let player of players)
+		addPlayer(player)
+})()

@@ -4,5 +4,27 @@
 		<link rel="stylesheet" type="text/css" href="./css/descriptor/style.css">
 		<title>Noise - Descriptor Graph</title>
 	</head>
-	<body></body>
+	<body>
+		<div id="content">
+			<div id="description">
+				<div>
+					<div id="selector" class="iconic"></div>
+					<div id="name">Unselected</div>
+					<div id="test">
+						<input type="text" placeholder="Enter search">
+						Test Query
+					</div>
+				</div>
+				<hr>
+			</div>
+			<div id="graph">
+				<div class="node">
+					<div id="name">Unknown</div>
+					<div id="inputs"></div>
+					<div id="outputs"></div>
+				</div>
+			</div>
+		</div>
+		<script>require("./js/pageDescriptor.js")</script>
+	</body>
 </html>
