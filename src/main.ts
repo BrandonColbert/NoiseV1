@@ -1,9 +1,12 @@
 import {app, BrowserWindow, screen, protocol} from "electron"
 import {promises as fs} from "fs"
 import path from "path"
+import Courier from "./core/courier.js"
 import Noise from "./core/noise.js"
+import Player from "./core/player.js"
+import Playlist from "./core/playlist.js"
 
-const AppScheme: Electron.CustomScheme = {
+const appScheme: Electron.CustomScheme = {
 	scheme: "app",
 	privileges: {
 		standard: true,
@@ -14,20 +17,69 @@ const AppScheme: Electron.CustomScheme = {
 	}
 }
 
-protocol.registerSchemesAsPrivileged([AppScheme])
+protocol.registerSchemesAsPrivileged([appScheme])
+
+/**
+ * Ensures the presence of configuration directories and files
+ */
+async function ensure(): Promise<void> {
+	//Ensure directories exist
+	let paths = [
+		Noise.Paths.extensions,
+		Noise.Paths.config,
+		Courier.path,
+		Player.path,
+		Playlist.path
+	]
+
+	for(let path of paths) {
+		try {
+			await fs.access(path)
+		} catch {
+			await fs.mkdir(path)
+		}
+	}
+
+	//Ensure settings exists
+	try {
+		await fs.access(Noise.Paths.settings)
+	} catch {
+		await fs.copyFile(`${Noise.Paths.resources}/data/settings.json`, Noise.Paths.settings)
+	}
+}
+
+async function loadExtensions(): Promise<void> {
+	//Load extensions
+	for(let dirent of await fs.readdir(Noise.Paths.extensions, {withFileTypes: true})) {
+		if(!dirent.isDirectory()) {
+			console.error(`Extension ${dirent.name} is not a directory!`)
+			continue
+		}
+
+		try {
+			await fs.access(`${Noise.Paths.extensions}/${dirent.name}/package.json`)
+		} catch {
+			console.error(`Extension '${dirent.name}' is missing package.json!`)
+			continue
+		}
+
+		require(`${Noise.Paths.extensions}/${dirent.name}`)
+		console.log(`Loaded extension: ${dirent.name}`)
+	}
+}
 
 //Setup process
 ;(async function(): Promise<void> {
 	//Ensure config exists
-	await Noise.ensure()
+	await ensure()
 
 	//Prepare
 	app.allowRendererProcessReuse = true
 	await app.whenReady()
 
 	//Special file protocol to app directory
-	protocol.registerFileProtocol(AppScheme.scheme, (request, callback) => {
-		let url = request.url.slice(`${AppScheme.scheme}://`.length);
+	protocol.registerFileProtocol(appScheme.scheme, (request, callback) => {
+		let url = request.url.slice(`${appScheme.scheme}://`.length);
 		let newUrl = path.normalize(`${__dirname}/../${url}`)
 
 		callback({path: newUrl})
@@ -37,7 +89,8 @@ protocol.registerSchemesAsPrivileged([AppScheme])
 	let scale = screen.getPrimaryDisplay().scaleFactor
 
 	let window = new BrowserWindow({
-		icon: `app/resources/icons/icon.png`,
+		icon: "app/resources/icons/icon.png",
+		backgroundColor: (await Noise.getSettings()).theme.background,
 		width: 1200 / scale,
 		height: 750 / scale,
 		minWidth: 750,
@@ -110,21 +163,5 @@ protocol.registerSchemesAsPrivileged([AppScheme])
 	//Display home window
 	await window.loadFile("app/home.html")
 
-	//Load extensions
-	for(let dirent of await fs.readdir(Noise.Paths.extensions, {withFileTypes: true})) {
-		if(!dirent.isDirectory()) {
-			console.error(`Extension ${dirent.name} is not a directory!`)
-			continue
-		}
-
-		try {
-			await fs.access(`${Noise.Paths.extensions}/${dirent.name}/package.json`)
-		} catch {
-			console.error(`Extension '${dirent.name}' is missing package.json!`)
-			continue
-		}
-
-		require(`${Noise.Paths.extensions}/${dirent.name}`)
-		console.log(`Loaded extension: ${dirent.name}`)
-	}
+	await loadExtensions()
 })()

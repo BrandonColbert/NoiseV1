@@ -1,8 +1,8 @@
 import {remote} from "electron"
-import Courier from "./core/courier.js"
-import Player from "./core/player.js"
-import Dropdown from "./ui/dropdown.js"
-import TextUtils from "./utils/textUtils.js"
+import Courier from "../core/courier.js"
+import Player from "../core/player.js"
+import Dropdown from "../ui/dropdown.js"
+import TextUtils from "../utils/textUtils.js"
 
 let courierItems = document.querySelector("#couriers .items")
 let playerItems = document.querySelector("#players .items")

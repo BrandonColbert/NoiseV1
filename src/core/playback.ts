@@ -27,14 +27,14 @@ export default abstract class Playback {
 	 * Play the next item
 	 */
 	public async playNext(): Promise<void> {
-		this.play(this.itemIndex + 1)
+		await this.play(this.itemIndex + 1)
 	}
 
 	/**
 	 * Play the previous item
 	 */
 	public async playPrevious(): Promise<void> {
-		this.play(this.itemIndex - 1)
+		await this.play(this.itemIndex - 1)
 	}
 
 	/**

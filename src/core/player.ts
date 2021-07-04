@@ -17,7 +17,7 @@ export class Player extends Helper {
 	private urlPattern: string
 	private urlRegex: RegExp
 	private view: WebviewTag
-	private mediaNode: Graph.Node
+	private mediaNode?: Graph.Node
 
 	protected constructor(id: string) {
 		super()
@@ -34,7 +34,7 @@ export class Player extends Helper {
 		return {
 			name: this.name,
 			urlPattern: this.urlPattern,
-			nodes: this.graph.nodeData
+			nodes: this.graph.getDataset()
 		}
 	}
 
@@ -42,7 +42,7 @@ export class Player extends Helper {
 		this.name = value.name
 		this.urlPattern = value.urlPattern
 		this.urlRegex = new RegExp(value.urlPattern, "g")
-		this.graph.nodeData = value.nodes
+		this.graph.setDataset(value.nodes)
 	}
 
 	/** Number of seconds that the content has been playing */
@@ -167,7 +167,7 @@ export class Player extends Helper {
 		let players = await Player.all()
 		let names = new Set<string>(players.map(p => p.name))
 
-		let name: string = null
+		let name: string
 		let index = 0
 
 		do {
@@ -205,18 +205,18 @@ export class Player extends Helper {
 	 * @param view Webview instance
 	 */
 	public static async for(view: WebviewTag): Promise<Player> {
-		let players = await Player.all()
-
 		//Find first matching player
-		let player = players.find(p => p.urlRegex.test(view.getURL()))
+		for await (let player of this) {
+			if(!player.urlRegex.test(view.getURL()))
+				continue
 
-		if(!player)
-			return null
+			//Associate with webview
+			player.view = view
 
-		//Associate with webview
-		player.view = view
+			return player
+		}
 
-		return player
+		return null
 	}
 
 	public static async load(id: string): Promise<Player> {
@@ -228,7 +228,8 @@ export class Player extends Helper {
 		try {
 			let data = await fs.readFile(player.path, "utf8")
 			player.info = JSON.parse(data) as Player.Info
-		} catch {
+		} catch(e) {
+			console.error(e)
 			return null
 		}
 
@@ -246,10 +247,23 @@ export class Player extends Helper {
 	}
 
 	public static async all(): Promise<Player[]> {
-		let ids = await Player.allIds()
+		let players: Player[] = []
 
-		//Transform ids to player isntances
-		return await Promise.all(ids.map(async id => Player.load(id)))
+		for await (let player of this)
+			players.push(player)
+
+		return players
+	}
+
+	public static async *[Symbol.asyncIterator](): AsyncIterableIterator<Player> {
+		for(let id of await Player.allIds()) {
+			let player = await Player.load(id)
+
+			if(!player)
+				continue
+
+			yield player
+		}
 	}
 }
 

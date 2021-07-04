@@ -1,8 +1,8 @@
 import Graph from "./graph.js"
 
 export default class MediaNode extends Graph.Node {
-	public constructor(graph: Graph, data: Graph.Node.Data = null, id: string = null) {
-		super(graph, data, id)
+	public constructor(...args: ConstructorParameters<typeof Graph.Node>) {
+		super(...args)
 		this.addOptionField("selectors")
 	}
 

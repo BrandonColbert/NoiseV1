@@ -28,8 +28,8 @@ export default class Generate {
 
 	public static range(par1?: number, par2?: number): number {
 		if(par2) {
-			let lower = par1
-			let upper = par2
+			let lower = par1 as number
+			let upper = par2 as number
 
 			return lower + Math.random() * (upper - lower)
 		} else if(par1) {

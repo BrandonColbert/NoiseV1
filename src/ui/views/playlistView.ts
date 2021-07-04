@@ -4,62 +4,82 @@ import Playlist from "../../core/playlist.js"
 import Dropdown from "../dropdown.js"
 import PlaylistElement from "../elements/playlistElement.js"
 import PlaybackView from "./playbackView.js"
-import Courier from "../../core/courier.js"
+import View from "../view.js"
+import EntrybarView from "./entrybarView.js"
 
-export default class PlaylistView implements View {
-	public readonly element: HTMLElement
-	private playbackView: PlaybackView
-	private playlistElement: PlaylistElement
-	private playlistSelectionButton: HTMLButtonElement
-	private playlistTitle: HTMLElement
-	private optionsButton: HTMLButtonElement
-	private entrybarAdd: HTMLButtonElement
-	private entrybarQuery: HTMLInputElement
-	private courierTitle: HTMLDivElement
-	private courierSelection: HTMLDivElement
-	#courier: Courier = null
+export class PlaylistView implements View {
+	public readonly playbackView: PlaybackView
+	public readonly element: HTMLDivElement
+	public readonly elements: PlaylistView.Elements
+	public readonly views: PlaylistView.Views
 
-	public constructor(element: HTMLElement, playbackView: PlaybackView) {
-		this.element = element
+	public constructor(playbackView: PlaybackView, element: HTMLDivElement) {
 		this.playbackView = playbackView
-
-		this.playlistSelectionButton = this.element.querySelector("#playlists > button")
-		this.playlistTitle = this.element.querySelector("#playlists > div")
-		this.optionsButton = this.element.querySelector("#options")
-		this.entrybarAdd = this.element.querySelector("#entrybar > #add")
-		this.entrybarQuery = this.element.querySelector("#entrybar > #query > input")
-		this.courierTitle = this.element.querySelector("#entrybar > #courier > :nth-child(1)")
-		this.courierSelection = this.element.querySelector("#entrybar > #courier")
-
-		this.playlistSelectionButton.addEventListener("click", this.onPlaylistSelectionButtonClick)
-		this.playlistTitle.addEventListener("contextmenu", this.onPlaylistTitleContext)
-		this.optionsButton.addEventListener("click", this.onOptionsButtonClick)
-		this.entrybarAdd.addEventListener("click", this.onEntrybarAddClick)
-		this.entrybarQuery.addEventListener("keydown", this.onEntrybarQueryKeyDown)
-		this.entrybarQuery.addEventListener("input", this.onEntrybarQueryInput)
-		this.courierSelection.addEventListener("click", this.onCourierSelectionClick)
+		this.element = element
+		this.elements = new PlaylistView.Elements(this)
+		this.views = new PlaylistView.Views(this)
 	}
 
 	/** Active playlist */
 	public get playlist(): Playlist {
-		return this.playlistElement
+		return this.elements.playlist?.value
 	}
 
-	/** Selected courier */
-	public get courier(): Courier {
-		return this.#courier
+	public set playlist(value: Playlist) {
+		if(value == this.playlist)
+			return
+
+		//Remember selection
+		if(value)
+			localStorage.setItem("playlist", value.id)
+		else
+			localStorage.removeItem("playlist")
+
+		//Reset visuals
+		this.playbackView.reset()
+		this.elements.title.textContent = "Unselected"
+
+		//Remove previous playlist
+		this.playlist?.events.forget("rename", this.onRename)
+		this.playlist?.events.forget("delete", this.onDelete)
+		this.elements.playlist?.remove()
+
+		if(!value) {
+			this.elements.playlist = null
+			return
+		}
+
+		//Create visuals
+		this.elements.playlist = new PlaylistElement(value)
+		this.elements.playlist.playback = this.playbackView
+		this.element.querySelector("#items").append(this.elements.playlist)
+
+		//Acquire name
+		this.playlist.getName().then(name => this.elements.title.textContent = name)
+
+		//Add listeners
+		this.playlist.events.on("rename", this.onRename)
+		this.playlist.events.on("delete", this.onDelete)
 	}
 
-	public destroy(): void {
-		this.playlistElement?.value.remove()
+	public construct(): void {
+		this.views.constructAll()
 
-		this.playlistSelectionButton.removeEventListener("click", this.onPlaylistSelectionButtonClick)
-		this.playlistTitle.removeEventListener("contextmenu", this.onPlaylistTitleContext)
-		this.optionsButton.removeEventListener("click", this.onOptionsButtonClick)
-		this.entrybarAdd.removeEventListener("click", this.onEntrybarAddClick)
-		this.entrybarQuery.removeEventListener("keydown", this.onEntrybarQueryKeyDown)
-		this.entrybarQuery.removeEventListener("input", this.onEntrybarQueryInput)
-		this.courierSelection.removeEventListener("click", this.onCourierSelectionClick)
+		//Add listeners
+		this.elements.selector.addEventListener("click", this.onSelectorClick)
+		this.elements.title.addEventListener("contextmenu", this.onTitleContext)
+		this.elements.options.addEventListener("click", this.onOptionsClick)
+	}
+
+	public deconstruct(): void {
+		this.views.deconstructAll()
+
+		this.elements.playlist = null
+
+		//Remove listeners
+		this.elements.selector.removeEventListener("click", this.onSelectorClick)
+		this.elements.title.removeEventListener("contextmenu", this.onTitleContext)
+		this.elements.options.removeEventListener("click", this.onOptionsClick)
 	}
 
 	/**
@@ -68,80 +88,49 @@ export default class PlaylistView implements View {
 	 * Only a single item may be highlighted at any given time.
 	 * @param index Index of the item
 	 */
-	public highlightItemAt(index: number = null): void {
-		if(!this.playlistElement)
+	public highlightItemAt(index: number): void {
+		if(!this.elements.playlist)
 			return
 
-		let itemElements = [...this.playlistElement]
-
-		for(let element of itemElements)
-			element.value.classList.remove("playingItem")
-
-		if(index == null)
-			return
-
-		let itemElement = itemElements[index]
-		itemElement.value.classList.add("playingItem")
+		this.clearHighlights()
+		this.elements.playlist.children[index].classList.add("playingItem")
 	}
 
-	public async setPlaylist(playlist: Playlist): Promise<void> {
-		//Reset view
-		this.playlistTitle.textContent = "Unselected"
-		this.playlistElement?.value.remove()
-		this.playlistElement = null
-
-		await this.playbackView.reset()
-
-		//Halt if no playlist
-		if(playlist == null)
-			return
-
-		//Remember selection
-		localStorage.setItem("playlist", playlist.id)
-
-		//Setup new view
-		this.playlistTitle.textContent = await playlist.getName()
-
-		this.playlistElement = await PlaylistElement.createElement(playlist, this.playbackView)
-		this.element.querySelector("#items").append(this.playlistElement.value)
-
-		//Register events
-		this.playlistElement.events.on(
-			"rename",
-			details => this.playlistTitle.textContent = details.newName
-		)
-
-		this.playlist.events.on("delete", async () => {
-			let playlists = await Playlist.all()
-
-			if(playlists.length == 0)
-				return
-		
-			await this.setPlaylist(playlists[0])
-		})
+	/**
+	 * Removes existing highlights
+	 */
+	public clearHighlights(): void {
+		for(let element of this.elements.playlist.children)
+			element.classList.remove("playingItem")
 	}
 
-	public setCourier(value: Courier): void {
-		//Remember selection
-		localStorage.setItem("courier", value.id)
-
-		this.courierTitle.textContent = value.name
-		this.#courier = value
+	private onRename = (event: Playlist.Events.Rename) => {
+		this.elements.title.textContent = event.newName
 	}
 
-	private onPlaylistSelectionButtonClick = async (event: Event) => {
+	private onDelete = async () => {
+		let playlists = await Playlist.all()
+
+		//Switch to next playlist when current is deleted
+		if(playlists.length > 0)
+			this.playlist = playlists[0]
+		else
+			this.deconstruct()
+	}
+
+	private onSelectorClick = async (event: MouseEvent) => {
 		let playlists = await Playlist.all()
 
 		//Populate with existing playlists
 		let entries = await Promise.all(playlists.map(async p => ({
 			text: await p.getName(),
-			callback: async () => await this.setPlaylist(p)
+			callback: async () => this.playlist = p
 		})))
 
 		//Additional entry to create a new playlist
 		entries.push({
 			text: "+ New Playlist",
-			callback: async () => await this.setPlaylist(await Playlist.create())
+			callback: async () => this.playlist = await Playlist.create()
 		})
 
 		let dropdown = Dropdown.show(entries, {
@@ -149,15 +138,14 @@ export default class PlaylistView implements View {
 			target: event.target as HTMLElement
 		})
 
-		let ids = playlists.map(p => p.id)
-
 		if(!this.playlist)
 			return
 
+		let ids = playlists.map(p => p.id)
 		dropdown.element.children[ids.indexOf(this.playlist.id)].scrollIntoView({block: "center"})
 	}
 
-	private onPlaylistTitleContext = async (event: Event) => {
+	private onTitleContext = async (event: MouseEvent) => {
 		event.preventDefault()
 
 		if(!this.playlist)
@@ -165,15 +153,15 @@ export default class PlaylistView implements View {
 
 		Dropdown.show([
 			{text: "Rename", callback: async () => {
-				let result = await TextUtils.rename(event.target as HTMLElement)
+				let result = await TextUtils.rename(this.elements.title)
 
-				if(result == null)
+				if(!result)
 					return
 
 				if(await this.playlist.setName(result))
 					return
 
-				;(event.target as HTMLElement).textContent = await this.playlist.getName()
+				this.elements.title.textContent = await this.playlist.getName()
 			}},
 			{text: "Export as .json", callback: async () => await this.playlist.export()},
 			{text: "Delete", callback: async () => {
@@ -194,7 +182,7 @@ export default class PlaylistView implements View {
 		], {target: event.target as HTMLElement})
 	}
 
-	private onOptionsButtonClick = async (event: Event) => {
+	private onOptionsClick = async (event: MouseEvent) => {
 		Dropdown.show([
 			{text: "Import playlist", callback: async () => {
 				let playlists = await Playlist.import()
@@ -202,61 +190,38 @@ export default class PlaylistView implements View {
 				if(playlists?.length ?? 0 == 0)
 					return
 
-				await this.setPlaylist(playlists[playlists.length - 1])
+				this.playlist = playlists[playlists.length - 1]
 			}},
 			{text: "View helpers", callback: async () => await remote.getCurrentWindow().loadFile("app/helpers.html")},
 			{text: "Edit settings"},
-			{text: "Inspect player", callback: () => this.playbackView.playerView.element.openDevTools()}
+			{text: "Inspect player", callback: () => this.playbackView.views.playerView.element.openDevTools()}
 		], {target: event.target as Element})
 	}
+}
 
-	private async addQueryItem(): Promise<void> {
-		if(!this.playlist)
-			return
+export namespace PlaylistView {
+	export class Elements extends View.Children {
+		public readonly selector: HTMLButtonElement
+		public readonly title: HTMLDivElement
+		public readonly options: HTMLButtonElement
+		public playlist: PlaylistElement
 
-		let items = await this.playlist.getItems()
-		items.push({query: this.entrybarQuery.value, courier: this.courier?.id ?? undefined})
-		await this.playlist.setItems(items)
-
-		this.entrybarQuery.value = ""
-		this.playlistElement?.exhibit(_ => true)
-		this.playlistElement?.ensureVisibility(items.length - 1)
-	}
-
-	private onEntrybarAddClick = async (_: MouseEvent) => {
-		if(this.entrybarQuery.value.length == 0)
-			return
-
-		await this.addQueryItem()
-	}
-
-	private onEntrybarQueryKeyDown = async (event: KeyboardEvent) => {
-		let input = event.target as HTMLInputElement
-
-		switch(event.code) {
-			case "Enter":
-				if(input.value.length == 0)
-					break
-
-				await this.addQueryItem()
-				break
+		public constructor(view: PlaylistView) {
+			super(view)
+			this.selector = this.querySelector("#playlists > button")
+			this.title = this.querySelector("#playlists > div")
+			this.options = this.querySelector("#options")
 		}
 	}
 
-	private onEntrybarQueryInput = async (event: InputEvent) => {
-		let input = event.target as HTMLInputElement
-		this.playlistElement?.exhibit(item => TextUtils.simplify(item.query).includes(TextUtils.simplify(input.value)))
-	}
+	export class Views extends View.Viewset {
+		public readonly entrybarView: EntrybarView
 
-	private onCourierSelectionClick = async (event: MouseEvent) => {
-		let couriers = await Courier.all()
-
-		Dropdown.show(
-			couriers.map(c => ({
-				text: c.name,
-				callback: () => this.setCourier(c)
-			})),
-			{target: event.target as HTMLElement, height: "25%"}
-		)
+		public constructor(view: PlaylistView) {
+			super(view)
+			this.add("entrybarView", new EntrybarView(view, this.querySelector("#entrybar")))
+		}
 	}
 }
+
+export default PlaylistView

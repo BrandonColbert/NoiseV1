@@ -1,15 +1,15 @@
 import Graph from "./graph.js"
 
 export default class SelectorNode extends Graph.Node {
-	public constructor(graph: Graph, data: Graph.Node.Data = null, id: string = null) {
-		super(graph, data, id)
-		this.addInputField("rootElement", {type: "Element"})
-		this.addOutputField("foundElement", {type: "Element"})
+	public constructor(...args: ConstructorParameters<typeof Graph.Node>) {
+		super(...args)
+		this.addInputField("root", {type: "Element"})
+		this.addOutputField("found", {type: "Element"})
 		this.addOptionField("selectors")
 	}
 
 	protected async process(): Promise<void> {
-		let rootElement = this.getInput<Element>("rootElement")
-		this.setOutput("foundElement", rootElement.querySelector(this.getOption("selectors")))
+		let rootElement = this.getInput<Element>("root")
+		this.setOutput("found", rootElement.querySelector(this.getOption("selectors")))
 	}
 }

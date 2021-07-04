@@ -1,9 +1,6 @@
 import {app, remote} from "electron"
 import {promises as fs} from "fs"
 import path from "path"
-import Courier from "./courier.js"
-import Player from "./player.js"
-import Playlist from "./playlist.js"
 
 export class Noise {
 	public static async getSettings(): Promise<Noise.Settings> {
@@ -23,48 +20,11 @@ export class Noise {
 	 * Applies the configured theme to the current document
 	 */
 	public static async applyTheme(): Promise<void> {
-		//Get theme from settings
 		let settings = await Noise.getSettings()
-		let theme = settings?.theme
 
-		//Do nothing if no theme present
-		if(!theme)
-			return
-
-		let style = document.documentElement.style
-
-		//Modify CSS custom colors according to theme values
-		for(let [key, value] of Object.entries(theme))
-			style.setProperty(`--color-${key}`, value)
-	}
-
-	/**
-	 * Ensures the presence of configuration directories and files
-	 */
-	public static async ensure(): Promise<void> {
-		//Ensure directories exist
-		let paths = [
-			Noise.Paths.extensions,
-			Noise.Paths.config,
-			Courier.path,
-			Player.path,
-			Playlist.path
-		]
-
-		for(let path of paths) {
-			try {
-				await fs.access(path)
-			} catch {
-				await fs.mkdir(path)
-			}
-		}
-
-		//Ensure settings exists
-		try {
-			await fs.access(Noise.Paths.settings)
-		} catch {
-			await fs.copyFile(`${Noise.Paths.resources}/data/settings.json`, Noise.Paths.settings)
-		}
+		//Modify root colors according to theme values
+		for(let [key, value] of Object.entries(settings.theme))
+			document.documentElement.style.setProperty(`--color-${key}`, value)
 	}
 }
 
@@ -83,7 +43,7 @@ export namespace Noise {
 		 * Directory to the externally bundled resources
 		 */
 		public static get resources(): string {
-			if(process.mainModule.filename.indexOf("app.asar") == -1)
+			if(require.main && require.main.filename.indexOf("app.asar") == -1)
 				return "app/resources"
 
 			return path.join(process.resourcesPath, "app/resources")

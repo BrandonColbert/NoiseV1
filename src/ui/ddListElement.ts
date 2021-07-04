@@ -1,78 +1,55 @@
+import UIElement from "./uiElement.js"
 import Generate from "../utils/generate.js"
 import Dispatcher from "../utils/dispatcher.js"
 
 /**
- * A List with children that can be re-ordered through Drag & Drop
+ * A list with children that can be reordered through drag and drop
  */
-export default class DDListElement extends HTMLElement {
+export class DDListElement extends UIElement {
 	private static image: HTMLImageElement = new Image()
 
-	public readonly events: Dispatcher<Events>
+	public readonly events: Dispatcher<DDListElement.Events>
 
 	/** Used to acquire data from drops */
-	public dataBind: (index: number) => any
+	public dataBind?: (index: number) => any
 
-	private observer: MutationObserver
-	private observing: boolean = false
-
-	private activeElement: HTMLElement
-	private moveCancel: () => void
+	private activeElement?: HTMLElement
+	private moveCancel?: () => void
 
 	public constructor() {
 		super()
-		this.events = new Dispatcher<Events>(["drop", "reorder", "transfer"])
-
-		;[...this.children].forEach(this.include)
-
-		this.observer = new MutationObserver(this.onMutate)
-		this.enable()
+		this.events = new Dispatcher<DDListElement.Events>(["drop", "reorder", "transfer"])
 	}
 
-	public get id(): string {
+	public override get id(): string {
 		if(!super.id)
 			super.id = `ddl_${Generate.uuid()}`
 
 		return super.id
 	}
 
-	/**
-	 * Enables reordering of target's children
-	 */
-	public enable(): void {
-		if(this.observing)
-			return
-
-		this.observing = true
-		this.observer.observe(this, {childList: true})
+	protected override attached(): void {
+		for(let child of this.children)
+			if(child instanceof HTMLElement)
+				this.include(child)
 	}
 
-	/**
-	 * Disables reordering of the target's children
-	 */
-	public disable(): void {
-		if(!this.observing)
-			return
-
-		this.observer.disconnect()
-		this.observing = false
+	protected override detached(): void {
+		for(let child of this.children)
+			if(child instanceof HTMLElement)
+				this.exclude(child)
 	}
 
-	public static define(): void {
-		customElements.define("dd-list", DDListElement)
+	protected override onChildAttached(node: Node): void {
+		UIElement.restrict(node, HTMLElement)
+		this.include(node as HTMLElement)
 	}
 
-	private onMutate = (mutations: MutationRecord[], _: MutationObserver): void => {
-		for(let mutation of mutations) {
-			switch(mutation.type) {
-				case "childList":
-					mutation.addedNodes.forEach(this.include)
-					mutation.removedNodes.forEach(this.exclude)
-					break
-			}
-		}
+	protected override onChildDetached(node: Node): void {
+		this.exclude(node as HTMLElement)
 	}
 
-	private include = (target: HTMLElement): void => {
+	private include(target: HTMLElement): void {
 		target = DDListElement.underview(target)
 
 		target.draggable = true
@@ -83,7 +60,7 @@ export default class DDListElement extends HTMLElement {
 		target.addEventListener("dragover", this.onChildDragOver)
 	}
 
-	private exclude = (target: HTMLElement): void => {
+	private exclude(target: HTMLElement): void {
 		target = DDListElement.underview(target)
 
 		target.draggable = false
@@ -95,9 +72,6 @@ export default class DDListElement extends HTMLElement {
 	}
 
 	private onChildDrag = (event: DragEvent): void => {
-		event.dataTransfer.dropEffect = "move"
-		event.dataTransfer.effectAllowed = "move"
-		event.dataTransfer.setDragImage(DDListElement.image, 0, 0)
 		;(event.target as HTMLElement).classList.add("reorderTarget")
 		
 		let target = DDListElement.overview(event.target as HTMLElement)
@@ -114,6 +88,12 @@ export default class DDListElement extends HTMLElement {
 			)
 		}
 
+		if(!event.dataTransfer)
+			return
+
+		event.dataTransfer.dropEffect = "move"
+		event.dataTransfer.effectAllowed = "move"
+		event.dataTransfer.setDragImage(DDListElement.image, 0, 0)
 		event.dataTransfer.setData(
 			"text/plain",
 			JSON.stringify({
@@ -128,7 +108,7 @@ export default class DDListElement extends HTMLElement {
 		let info: any
 
 		try {
-			info = JSON.parse(event.dataTransfer.getData("text/plain"))
+			info = event.dataTransfer ? JSON.parse(event.dataTransfer.getData("text/plain")) : {}
 		} catch(_) {
 			return
 		}
@@ -141,7 +121,7 @@ export default class DDListElement extends HTMLElement {
 			return
 
 		let sourceList = document.querySelector<DDListElement>(info.selector)
-		sourceList.activeElement = null
+		sourceList.activeElement = undefined
 
 		if(sourceList == this) { //Reorder within list
 			let target = DDListElement.overview(event.target as HTMLElement)
@@ -154,7 +134,9 @@ export default class DDListElement extends HTMLElement {
 			await this.events.fire("reorder", {
 				from: sourceIndex,
 				to: targetIndex,
-				cancel: this.moveCancel
+				cancel: this.moveCancel ?? (() => {
+					throw new Error("Unable to cancel move")
+				})
 			})
 		} else { //Transfer to this list
 			let canceled = false
@@ -171,7 +153,7 @@ export default class DDListElement extends HTMLElement {
 			})
 
 			if(canceled) {
-				sourceList.moveCancel()
+				sourceList.moveCancel?.()
 				return
 			}
 
@@ -201,9 +183,9 @@ export default class DDListElement extends HTMLElement {
 
 	private onChildDragEnd = (event: DragEvent): void => {
 		if(this.activeElement)
-			this.moveCancel()
+			this.moveCancel?.()
 		
-		this.activeElement = null
+		this.activeElement = undefined
 		;(event.target as HTMLElement).classList.remove("reorderTarget")
 	}
 
@@ -218,7 +200,7 @@ export default class DDListElement extends HTMLElement {
 		}
 	}
 
-	private static overview(target: HTMLElement): HTMLElement {
+	private static overview(target?: HTMLElement): HTMLElement {
 		if(!target)
 			return null
 
@@ -229,38 +211,45 @@ export default class DDListElement extends HTMLElement {
 	}
 }
 
-interface ReorderEvent {
-	/** Starting index of the reordered element */
-	from: number
+export namespace DDListElement {
+	export interface Events {
+		reorder: Events.Reorder
+		drop: Events.Drop
+		transfer: Events.Transfer
+	}
 
-	/** Ending index of the reordered element */
-	to: number
-
-	/** Cancels the element being reordered */
-	cancel(): void
+	export namespace Events {
+		export interface Reorder {
+			/** Starting index of the reordered element */
+			from: number
+		
+			/** Ending index of the reordered element */
+			to: number
+		
+			/** Cancels the element being reordered */
+			cancel(): void
+		}
+		
+		export interface Drop {
+			/** Index for the element to be placed */
+			index: number
+		
+			/** Dropped data */
+			data: any
+		
+			/** Stops the drop and prevents a transfer event */
+			cancel(): void
+		}
+		
+		export interface Transfer {
+			/** Index of the element being transferred */
+			index: number
+		
+			/** List which the element was transferred to */
+			target: DDListElement
+		}
+	}
 }
 
-interface DropEvent {
-	/** Index for the element to be placed */
-	index: number
-
-	/** Dropped data */
-	data: any
-
-	/** Stops the drop and prevents a transfer event */
-	cancel(): void
-}
-
-interface TransferEvent {
-	/** Index of the element being transferred */
-	index: number
-
-	/** List which the element was transferred to */
-	target: DDListElement
-}
-
-interface Events {
-	reorder: ReorderEvent
-	drop: DropEvent
-	transfer: TransferEvent
-}
+DDListElement.register("dd-list")
+export default DDListElement

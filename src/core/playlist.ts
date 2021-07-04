@@ -12,11 +12,11 @@ import Generate from "../utils/generate.js"
  */
 export class Playlist {
 	public readonly id: string
-	public readonly events: Dispatcher<Events>
+	public readonly events: Dispatcher<Playlist.Events>
 
 	protected constructor(id: string) {
 		this.id = id
-		this.events = new Dispatcher<Events>(["changeContents", "delete", "rename"])
+		this.events = new Dispatcher<Playlist.Events>(["changeContents", "delete", "rename"])
 	}
 
 	private get path(): string {
@@ -78,8 +78,8 @@ export class Playlist {
 	/**
 	 * Display a file dialog to save the playlist as a .json file
 	 */
-	public async export(path: string = null): Promise<void> {
-		if(path == null) {
+	public async export(path?: string): Promise<void> {
+		if(!path) {
 			let {canceled, filePath} = await remote.dialog.showSaveDialog({
 				defaultPath: `${await this.getName()}.json`,
 				filters: [{
@@ -146,8 +146,8 @@ export class Playlist {
 	 * @param paths Paths to the playlists
 	 * @returns The imported playlist or null if not import failed
 	 */
-	public static async import(paths: string[] = null): Promise<Playlist[]> {
-		if(paths == null) {
+	public static async import(paths?: string[]): Promise<Playlist[]> {
+		if(!paths) {
 			let result = await remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
 				properties: [
 					"openFile",
@@ -175,9 +175,9 @@ export class Playlist {
 	/**
 	 * Create a new playlist
 	 * @param name Name of the playlist
-	 * @returns The new playlist or null if not possible
+	 * @returns The new playlist
 	 */
-	public static async create(name: string = null): Promise<Playlist> {
+	public static async create(name?: string): Promise<Playlist> {
 		let playlist = new Playlist(Generate.uuid())
 
 		await playlist.setInfo({
@@ -189,14 +189,13 @@ export class Playlist {
 	}
 
 	/**
-	 * All existing playlists
+	 * All existing playlists in ascending order by name
 	 */
 	public static async all(): Promise<Playlist[]> {
-		let dirents = await fs.readdir(Playlist.path, {withFileTypes: true})
+		let playlists: Playlist[] = []
 
-		let playlists = dirents
-			.filter(d => d.isFile() && path.extname(d.name) == ".json")
-			.map(d => new Playlist(d.name.slice(0, -path.extname(d.name).length)))
+		for await (let playlist of this)
+			playlists.push(playlist)
 
 		let names = await Promise.all(playlists.map(async p => await p.getName()))
 		let p2n = new Map<Playlist, string>(playlists.map((p, i) => ([p, names[i]])))
@@ -204,6 +203,15 @@ export class Playlist {
 		playlists.sort((a, b) => p2n.get(a).localeCompare(p2n.get(b)))
 
 		return playlists
+	}
+
+	public static async *[Symbol.asyncIterator](): AsyncIterableIterator<Playlist> {
+		for(let dirent of await fs.readdir(Playlist.path, {withFileTypes: true})) {
+			if(!dirent.isFile() || path.extname(dirent.name) != ".json")
+				continue
+
+			yield new Playlist(dirent.name.slice(0, -path.extname(dirent.name).length))
+		}
 	}
 }
 
@@ -223,17 +231,24 @@ export namespace Playlist {
 		name: string
 		items: Item[]
 	}
-}
 
-interface Events {
-	/** Playlist receives a new name */
-	rename: {oldName: string, newName: string}
+	export interface Events {
+		/** Playlist receives a new name */
+		rename: Events.Rename
+	
+		/** Media items modified */
+		changeContents: void
+	
+		/** Playlist deleted */
+		delete: void
+	}
 
-	/** Media items modified */
-	changeContents: void
-
-	/** Playlist deleted */
-	delete: void
+	export namespace Events {
+		export interface Rename {
+			oldName: string
+			newName: string
+		}
+	}
 }
 
 export default Playlist

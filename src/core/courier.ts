@@ -21,8 +21,8 @@ export class Courier extends Helper {
 		super()
 		this.id = id
 		this.graph.registerNodeType("request", RequestNode, "courier")
-		this.graph.registerNodeType("media-title", MediaTitleNode, "courier")
-		this.graph.registerNodeType("media-url", MediaUrlNode, "courier")
+		this.graph.registerNodeType("mediaTitle", MediaTitleNode, "courier")
+		this.graph.registerNodeType("mediaUrl", MediaUrlNode, "courier")
 	}
 
 	protected get path(): string {
@@ -32,13 +32,13 @@ export class Courier extends Helper {
 	protected get info(): Courier.Info {
 		return {
 			name: this.name,
-			nodes: this.graph.nodeData
+			nodes: this.graph.getDataset()
 		}
 	}
 
 	protected set info(value: Courier.Info) {
 		this.name = value.name
-		this.graph.nodeData = value.nodes
+		this.graph.setDataset(value.nodes)
 	}
 
 	/**
@@ -61,10 +61,13 @@ export class Courier extends Helper {
 		let titleNode = completedNodes.find(n => n instanceof MediaTitleNode)
 		let urlNode = completedNodes.find(n => n instanceof MediaUrlNode)
 
+		if(!urlNode)
+			return null
+
 		//Return their input as the result
 		return {
 			title: titleNode?.getInput("title"),
-			url: urlNode?.getInput("url")
+			url: urlNode.getInput("url")
 		}
 	}
 
@@ -81,7 +84,7 @@ export class Courier extends Helper {
 	}
 
 	public async duplicate(): Promise<Courier> {
-		let path: string = null
+		let path: string
 		let index = 0
 
 		while(true) {
@@ -118,7 +121,8 @@ export class Courier extends Helper {
 		try {
 			let data = await fs.readFile(courier.path, "utf8")
 			courier.info = JSON.parse(data) as Courier.Info
-		} catch {
+		} catch(e) {
+			console.error(e)
 			return null
 		}
 
@@ -128,8 +132,8 @@ export class Courier extends Helper {
 	public static async create(name: string): Promise<Courier>
 	public static async create(id: string, name: string): Promise<Courier>
 	public static async create(par1: string, par2?: string): Promise<Courier> {
-		let id: string = null
-		let name: string = null
+		let id: string
+		let name: string
 
 		if(par2) {
 			id = par1
@@ -167,10 +171,23 @@ export class Courier extends Helper {
 	}
 
 	public static async all(): Promise<Courier[]> {
-		let ids = await Courier.allIds()
-		let couriers = await Promise.all(ids.map(async id => Courier.load(id)))
+		let couriers: Courier[] = []
+
+		for await(let courier of this)
+			couriers.push(courier)
 
 		return couriers
+	}
+
+	public static async *[Symbol.asyncIterator](): AsyncIterableIterator<Courier> {
+		for(let id of await Courier.allIds()) {
+			let courier = await Courier.load(id)
+
+			if(!courier)
+				continue
+
+			yield courier
+		}
 	}
 }
 

@@ -1,8 +1,8 @@
 import Graph from "./graph.js"
 
 export default class MatchNode extends Graph.Node {
-	public constructor(graph: Graph, data: Graph.Node.Data = null, id: string = null) {
-		super(graph, data, id)
+	public constructor(...args: ConstructorParameters<typeof Graph.Node>) {
+		super(...args)
 		this.addInputField("text", {type: "String"})
 		this.addOutputField("text", {type: "String"})
 		this.addOptionField("pattern")
@@ -13,7 +13,7 @@ export default class MatchNode extends Graph.Node {
 		let regex = new RegExp(this.getOption("pattern"), "g")
 		let matches = text.match(regex)
 
-		if(matches.length == 0)
+		if(!matches || matches.length == 0)
 			return
 
 		this.setOutput("text", matches[0])

@@ -2,14 +2,14 @@
 @import "./titlebar.css";
 
 :root {
-	--color-primary: darkslateblue;
-	--color-primary-variant: slateblue;
-	--color-accent: firebrick;
-	--color-accent-variant: crimson;
-	--color-background: #292e3e;
-	--color-foreground: #252b3d;
-	--color-foreground-variant: #2c3348;
-	--color-text: #e6dbdb;
+	--color-primary: transparent;
+	--color-primary-variant: transparent;
+	--color-accent: transparent;
+	--color-accent-variant: transparent;
+	--color-background: transparent;
+	--color-foreground: transparent;
+	--color-foreground-variant: transparent;
+	--color-text: transparent;
 }
 
 body {

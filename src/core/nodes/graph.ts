@@ -1,7 +1,6 @@
 import Generate from "../../utils/generate.js"
 
 type NodeConstructor = new(...args: any[]) => Graph.Node
-type Nodes = {[key: string]: Graph.Node.Data}
 
 export class Graph {
 	private nodes: Map<string, Graph.Node>
@@ -19,22 +18,6 @@ export class Graph {
 		}
 
 		this.nodes = new Map<string, Graph.Node>()
-	}
-
-	/**
-	 * Data defining node interaction and behavior.
-	 * 
-	 * Getting this property returns a copy of the data.
-	 */
-	public get nodeData(): Nodes {
-		return Object.fromEntries([...this].map(n => ([n.id, n.copyData()])))
-	}
-
-	public set nodeData(value: Nodes) {
-		for(let [id, data] of Object.entries(value)) {
-			const Ctor = this.nodeRegistry.nameToCtor.get(data.type)
-			this.addNode(new Ctor(this, data, id))
-		}
 	}
 
 	/**
@@ -59,6 +42,27 @@ export class Graph {
 	 */
 	public removeNode(id: string): void {
 		this.nodes.delete(id)
+	}
+
+	/**
+	 * @returns The data defining node interaction and behavior
+	 */
+	public getDataset(): Graph.Node.Dataset {
+		return Object.fromEntries([...this].map(n => ([n.id, n.getData()])))
+	}
+
+	/**
+	 * @param value Data for each node
+	 */
+	public setDataset(value: Graph.Node.Dataset): void {
+		for(let [id, data] of Object.entries(value)) {
+			const Ctor = this.nodeRegistry.nameToCtor.get(data.type)
+
+			if(!Ctor)
+				throw new Error(`Unable to construct node "${data.type}"`)
+
+			this.addNode(new Ctor(this, data, id))
+		}
 	}
 
 	/**
@@ -92,17 +96,19 @@ export namespace Graph {
 		/** Unique identifier of this node instance */
 		public readonly id: string
 
-		private readonly graph: Graph
+		/** Graph which this node is a part of */
+		public readonly graph: Graph
+
 		private readonly data: Node.Data
 		private input: Map<string, any>
 		private output: Map<string, any>
 		private fields: {
-			input: Map<string, ConnectionDescription>,
-			output: Map<string, ConnectionDescription>,
-			options: Map<string, OptionDescription>
+			input: Map<string, Node.ConnectionDescription>,
+			output: Map<string, Node.ConnectionDescription>,
+			options: Map<string, Node.OptionDescription>
 		}
 
-		protected constructor(graph: Graph, data: Node.Data = null, id: string = null) {
+		public constructor(graph: Graph, data?: Node.Data, id?: string) {
 			this.graph = graph
 			this.id = id ?? Generate.uuid()
 
@@ -115,15 +121,44 @@ export namespace Graph {
 			}
 
 			this.fields = {
-				input: new Map<string, ConnectionDescription>(),
-				output: new Map<string, ConnectionDescription>(),
-				options: new Map<string, OptionDescription>()
+				input: new Map<string, Node.ConnectionDescription>(),
+				output: new Map<string, Node.ConnectionDescription>(),
+				options: new Map<string, Node.OptionDescription>()
 			}
+		}
+
+		/** Name of this node type according to the graph */
+		public get name(): string {
+			return this.graph.getNodeTypeName(this.constructor as NodeConstructor)
+		}
+
+		/** Location of this node in the graph */
+		public get position(): [number, number] {
+			return this.data.position
+		}
+
+		public set position(value: [number, number]) {
+			this.data.position = value
+		}
+
+		/** Available input field names */
+		public get inputFields(): IterableIterator<string> {
+			return this.fields.input.keys()
+		}
+
+		/** Available output field names */
+		public get outputFields(): IterableIterator<string> {
+			return this.fields.output.keys()
+		}
+
+		/** Available option field names */
+		public get optionFields(): IterableIterator<string> {
+			return this.fields.options.keys()
 		}
 
 		/** State of input satisfaction */
 		public get status(): Node.Status {
-			let inputKeys = [...this.fields.input.keys()]
+			let inputKeys = [...this.inputFields]
 
 			if(inputKeys.every(v => this.input.has(v)))
 				return Node.Status.Complete
@@ -134,9 +169,9 @@ export namespace Graph {
 		}
 
 		/**
-		 * @returns A copy of this node's data
+		 * @returns A copy of this graph's data
 		 */
-		public copyData(): Node.Data {
+		public getData(): Node.Data {
 			return JSON.parse(JSON.stringify(this.data))
 		}
 
@@ -147,7 +182,7 @@ export namespace Graph {
 		 */
 		public async propogate(): Promise<void> {
 			//Check if all inputs are satisfied
-			if(this.status == "latent")
+			if(this.status != Node.Status.Complete)
 				return
 
 			//Clear existing outputs and process new results
@@ -155,7 +190,7 @@ export namespace Graph {
 			await this.process()
 
 			//Propogate connected nodes
-			for(let outputName in this.data.output ?? {}) {
+			for(let outputName in this.data.output) {
 				let value = this.getOutput(outputName)
 
 				for(let id in this.data.output[outputName]) {
@@ -168,6 +203,11 @@ export namespace Graph {
 				}
 			}
 		}
+
+		/**
+		 * Creates an HTMLElement representing the node's output
+		 */
+		// public abstract createResultElement(): HTMLElement
 
 		/**
 		 * Connect an output field to another node's input field
@@ -210,78 +250,157 @@ export namespace Graph {
 
 		/**
 		 * Set the value for an input field
-		 * @param name Input field name
+		 * @param fieldName Input field name
 		 * @param value Value to assign
 		 */
-		public setInput(name: string, value: any): void {
-			this.input.set(name, value)
+		public setInput(fieldName: string, value: any): void {
+			this.input.set(fieldName, value)
 		}
 
 		/**
-		 * @param name Input field name
+		 * @param fieldName Input field name
 		 * @returns Value for the specified input field 
 		 */
-		public getInput<T = any>(name: string): T {
-			return this.input.get(name) as T
+		public getInput<T = any>(fieldName: string): T {
+			return this.input.get(fieldName) as T
+		}
+
+		/**
+		 * @param fieldName Input field name
+		 * @returns Description of the specified input field
+		 */
+		public getInputDescription(fieldName: string): Node.ConnectionDescription {
+			return this.fields.input.get(fieldName)
+		}
+
+		/**
+		 * @param fieldName Input field name
+		 * @returns The node and output field supplying this input field's value or null if no supplier exists
+		 */
+		public getInputSupplier(fieldName: string): Node.FieldReference {
+			if(!this.data.input?.[fieldName])
+				return null
+
+			let [sourceId, sourceFieldName] = this.data.input[fieldName]
+
+			return {
+				node: this.graph.getNode(sourceId),
+				fieldName: sourceFieldName
+			}
 		}
 
 		/**
 		 * Set the value for an output field
-		 * @param name Output field name
+		 * @param fieldName Output field name
 		 * @param value Value to assign
 		 */
-		public setOutput(name: string, value: any): void {
-			this.output.set(name, value)
+		public setOutput(fieldName: string, value: any): void {
+			this.output.set(fieldName, value)
 		}
 
 		/**
-		 * @param name Output field name
+		 * @param fieldName Output field name
 		 * @returns Value for the specified output field 
 		 */	
-		public getOutput<T = any>(name: string): T {
-			return this.output.get(name) as T
+		public getOutput<T = any>(fieldName: string): T {
+			return this.output.get(fieldName) as T
+		}
+
+		/**
+		 * @param fieldName Output field name
+		 * @returns Description of the specified output field
+		 */
+		public getOutputDescription(fieldName: string): Node.ConnectionDescription {
+			return this.fields.output.get(fieldName)
+		}
+
+		/**
+		 * @param fieldName Output field name
+		 * @returns The nodes and outputs field consuming this output field's value
+		 */
+		public getOutputConsumers(fieldName: string): Node.FieldReference[] {
+			return Object.entries(this.data.output[fieldName]).flatMap(target => {
+				let [targetNodeId, targetFields] = target
+
+				return targetFields.map(targetField => ({
+					node: this.graph.getNode(targetNodeId),
+					fieldName: targetField
+				}))
+			})
 		}
 
 		/**
 		 * Set the value for an option field
-		 * @param name Option field name
+		 * @param fieldName Option field name
 		 * @param value String to assign
 		 */
-		public setOption(name: string, value: string): void {
+		public setOption(fieldName: string, value: string): void {
 			this.data.options ??= {}
-			this.data.options[name] = value
+			this.data.options[fieldName] = value
 		}
 
 		/**
 		 * @param name Option field name
 		 * @returns String for the specified option field 
 		 */	
-		public getOption(name: string): string {
-			return (this.data.options?.[name] as string) ?? null
+		public getOption(fieldName: string): string {
+			return this.data.options?.[fieldName] ?? this.fields.options.get(fieldName)?.defaultValue
 		}
 
-		protected addInputField(name: string, desc: ConnectionDescription = {}): void {
-			this.fields.input.set(name, desc)
+		/**
+		 * @param fieldName Option field name
+		 * @returns Description of the specified option field
+		 */
+		public getOptionDescription(fieldName: string): Node.OptionDescription {
+			return this.fields.options.get(fieldName)
 		}
 
-		protected addOutputField(name: string, desc: ConnectionDescription = {}): void {
-			this.fields.output.set(name, desc)
+		/**
+		 * Register a field to be used in processing
+		 * @param fieldName Field name
+		 * @param desc Field description
+		 */
+		protected addInputField(fieldName: string, desc: Node.ConnectionDescription = {}): void {
+			this.fields.input.set(fieldName, desc)
 		}
 
-		protected addOptionField(name: string, desc: OptionDescription = {}): void {
-			this.fields.options.set(name, desc)
+		/**
+		 * Register a field to be used in processing
+		 * @param fieldName Field name
+		 * @param desc Field description
+		 */
+		protected addOutputField(fieldName: string, desc: Node.ConnectionDescription = {}): void {
+			this.fields.output.set(fieldName, desc)
+		}
+
+		/**
+		 * Register a field to be used in processing
+		 * @param fieldName Field name
+		 * @param desc Field description
+		 */
+		protected addOptionField(fieldName: string, desc: Node.OptionDescription = {}): void {
+			this.fields.options.set(fieldName, desc)
 
 			if(!desc.defaultValue)
 				return
 
 			this.data.options ??= {}
-			this.data.options[name] ??= desc.defaultValue
+			this.data.options[fieldName] ??= desc.defaultValue
 		}
 
+		/**
+		 * Process the value of output fields assuming all input fields are satisfied
+		 */
 		protected abstract process(): Promise<void>
 	}
 
 	export namespace Node {
+		/** The ids of each node and their data */
+		export type Dataset = {[key: string]: Data}
+
+		/** A reference to a specific field of a node */
+		export type FieldReference = {node: Node, fieldName: string}
+
 		export enum Status {
 			/** No inputs satisfied */
 			Latent = "latent",
@@ -299,7 +418,7 @@ export namespace Graph {
 			type: string
 		
 			/** Options affecting output values */
-			options?: {[key: string]: string | number | boolean}
+			options?: {[key: string]: string}
 		
 			/**
 			 * Defines the source of each input field.
@@ -319,30 +438,30 @@ export namespace Graph {
 			 */
 			output?: {[key: string]: {[id: string]: string[]}}
 		}
+
+		export interface FieldDescription {
+			/** User-friendly name */
+			name?: string
+		
+			/** Summary describing this field's purpose */
+			summary?: string
+		}
+		
+		export interface ConnectionDescription extends FieldDescription {
+			/**
+			 * Type of the object being contained.
+			 * 
+			 * If unspecified, any value is allowed.
+			 * 
+			 * If this field is describing an input, its connection will be restricted to output fields with the same type.
+			 */
+			type?: string
+		}
+		
+		export interface OptionDescription extends FieldDescription {
+			defaultValue?: string
+		}
 	}
-}
-
-interface FieldDescription {
-	/** User-friendly name */
-	name?: string
-
-	/** Summary describing this field's purpose */
-	summary?: string
-}
-
-interface ConnectionDescription extends FieldDescription {
-	/**
-	 * Type of the object being contained.
-	 * 
-	 * If unspecified, any value is allowed.
-	 * 
-	 * If this field is describing an input, its connection will be restricted to output fields with the same type.
-	 */
-	type?: string
-}
-
-interface OptionDescription extends FieldDescription {
-	defaultValue?: string
 }
 
 export default Graph

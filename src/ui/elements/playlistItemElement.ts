@@ -4,53 +4,66 @@ import Playlist from "../../core/playlist.js"
 import Courier from "../../core/courier.js"
 import Dropdown from "../dropdown.js"
 import PlaylistElement from "./playlistElement.js"
+import UIElement from "../uiElement.js"
 
-export default class PlaylistItemElement {
-	public readonly value: HTMLElement
-	private playlist: PlaylistElement
-	private text: HTMLDivElement
-	#item: Playlist.Item
+export default class PlaylistItemElement extends UIElement {
+	public readonly icon: HTMLDivElement
+	public readonly text: HTMLDivElement
+	#value: Playlist.Item
 
-	public constructor(playlist: PlaylistElement) {
-		this.playlist = playlist
+	public constructor() {
+		super()
 
-		this.value = document.createElement("div")
-		this.value.classList.add("item")
+		this.classList.add("item")
 
-		let icon = document.createElement("div")
-		this.value.append(icon)
+		this.icon = document.createElement("div")
+		this.append(this.icon)
 
 		this.text = document.createElement("div")
-		this.value.append(this.text)
+		this.append(this.text)
+	}
+
+	public get value(): Playlist.Item {
+		return this.#value
+	}
+
+	public get playlist(): PlaylistElement {
+		return this.parentElement as PlaylistElement
 	}
 
 	/**
 	 * Show in document
 	 */
 	public show(): void {
-		this.value.style.display = null
+		this.style.display = null
 	}
 
 	/**
 	 * Hide in document
 	 */
 	public hide(): void {
-		this.value.style.display = "none"
+		this.style.display = "none"
 	}
 
 	/**
 	 * Associates the playlist item with that at the index
 	 * @param index Item index
+	 * @param item Item value
 	 */
-	public assign(index: number): void {
-		this.#item = this.playlist.items[index]
+	public assign(index: number, item: Playlist.Item): void {
+		this.#value = item
 
-		this.text.textContent = this.#item.query
-		this.text.title = this.#item.query
+		this.text.textContent = this.#value.query
+		this.text.title = this.#value.query
 
 		this.text.onclick = e => {
 			e.preventDefault()
-			this.playlist.playback.play(index)
+
+			//Ignore if text is being edited
+			if(document.activeElement == this.text)
+				return
+
+			this.playlist.playback?.play(index)
 		}
 
 		this.text.oncontextmenu = e => {
@@ -58,23 +71,23 @@ export default class PlaylistItemElement {
 
 			Dropdown.show([
 				{text: "Get link", callback: async () => {
-					let courier = await Courier.load(this.#item.courier)
-					let result = await courier.find(this.#item.query)
+					let courier = await Courier.load(this.#value.courier)
+					let result = await courier.find(this.#value.query)
 
 					clipboard.writeText(result.url)
 				}},
-				{text: "Copy", callback: () => clipboard.writeText(this.#item.query)},
+				{text: "Copy", callback: () => clipboard.writeText(this.#value.query)},
 				{text: "Redefine", callback: async () => {
 					let result = await TextUtils.rename(this.text)
 
 					if(result == null)
 						return
 
-					this.#item.query = result
+					this.#value.query = result
 
-					let items = await this.playlist.getItems()
-					items[index] = this.#item
-					await this.playlist.setItems(items)
+					let items = await this.playlist.value.getItems()
+					items[index] = this.#value
+					await this.playlist.value.setItems(items)
 				}},
 				{text: "Set courier", callback: async () => {
 					let couriers = await Courier.all()
@@ -82,18 +95,24 @@ export default class PlaylistItemElement {
 					Dropdown.show(couriers.map(c => ({
 						text: c.name,
 						callback: async () => {
-							let items = await this.playlist.getItems()
+							let items = await this.playlist.value.getItems()
 							items[index].courier = c.id
-							await this.playlist.setItems(items)
+							await this.playlist.value.setItems(items)
 						}
 					})), {position: [`${e.clientX}px`, `${e.clientY}px`]})
 				}},
 				{text: "Delete", callback: async () => {
-					let items = await this.playlist.getItems()
+					let items = await this.playlist.value.getItems()
 					items.splice(index, 1)
-					await this.playlist.setItems(items)
+					await this.playlist.value.setItems(items)
 				}}
 			], {position: [`${e.clientX}px`, `${e.clientY}px`]})
 		}
 	}
+
+	protected override attached(): void {
+		UIElement.restrict(this.parentNode, PlaylistElement)
+	}
 }
+
+PlaylistItemElement.register()

@@ -16,6 +16,6 @@ export default abstract class Helper {
 		this.graph.registerNodeType("match", MatchNode)
 		this.graph.registerNodeType("property", PropertyNode)
 		this.graph.registerNodeType("selector", SelectorNode)
-		this.graph.registerNodeType("string-insert", StringInsertNode, "string")
+		this.graph.registerNodeType("string.insert", StringInsertNode, "string")
 	}
 }

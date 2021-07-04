@@ -15,6 +15,17 @@ export default class TextUtils {
 	}
 
 	/**
+	 * Converts an variable-like name to a user-friendly name
+	 * @param value Variable-like name
+	 * @returns A user-friendly name
+	 */
+	public static transformToName(value: string): string {
+		return value
+			.replace(/^[a-z]/, s => s.toUpperCase())
+			.replace(/([a-z])([A-Z])/g, (_, ...p) => `${p[0]} ${p[1]}`)
+	}
+
+	/**
 	 * Rename an object through an element's text.
 	 * 
 	 * This assumes the element's text is the original value and that the text field may be modified.
@@ -30,8 +41,8 @@ export default class TextUtils {
 		}
 
 		return new Promise<string>(resolve => {
-			let keyListener: (e: KeyboardEvent) => void = null
-			let blurListener: (e: FocusEvent) => void = null
+			let keyListener: (e: KeyboardEvent) => void
+			let blurListener: (e: FocusEvent) => void
 
 			keyListener = e => {
 				switch(e.code) {
@@ -42,7 +53,7 @@ export default class TextUtils {
 
 						complete()
 
-						if(element.textContent.length == 0)
+						if(!element.textContent)
 							resolve(null)
 
 						resolve(element.textContent)

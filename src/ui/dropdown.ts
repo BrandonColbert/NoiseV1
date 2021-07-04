@@ -1,6 +1,7 @@
 /**
  * Dropdown menu
  */
+//TODO: Add support for multi-level dropdowns
 export class Dropdown {
 	/** Element representing this dropdown */
 	public readonly element: HTMLElement
@@ -74,17 +75,17 @@ export class Dropdown {
 
 		element.classList.add("dropdown")
 
-		if(options.hasOwnProperty("height")) {
+		if(options.height != undefined) {
 			style.overflowY = "auto"
 			style.maxHeight = options.height.toString()
 		}
 
-		if(options.hasOwnProperty("position")) {
+		if(options.position) {
 			let [x, y] = options.position
 
 			style.left = x.toString()
 			style.top = y.toString()
-		} else if(options.hasOwnProperty("target")) {
+		} else if(options.target) {
 			let [width, height] = [element.clientWidth, element.clientHeight / items.length * (items.length + 1)]
 			let rect = options.target.getBoundingClientRect()
 			let [left, top] = [rect.x, rect.bottom]

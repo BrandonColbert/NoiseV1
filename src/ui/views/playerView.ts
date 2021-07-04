@@ -1,9 +1,10 @@
 import {WebviewTag} from "electron"
 import Player from "../../core/player.js"
+import View from "../view.js"
 
 export default class PlayerView implements View {
 	public readonly element: WebviewTag
-	#player: Player = null
+	#player: Player
 
 	public constructor(element: WebviewTag) {
 		this.element = element
@@ -13,11 +14,17 @@ export default class PlayerView implements View {
 		return this.#player
 	}
 
-	public destroy(): void {
+	public deconstruct(): void {
 		this.element.src = "about:blank"
 	}
 
-	public async navigate(url: string = null): Promise<void> {
+	/**
+	 * Attempt to navigate to the specified URL
+	 * 
+	 * On success, the player will exists; on fail, an exception will be thrown
+	 * @param url Address to load in the player
+	 */
+	public async navigate(url?: string): Promise<void> {
 		if(!url) {
 			this.#player = null
 			await this.element.loadURL("about:blank")
@@ -28,6 +35,10 @@ export default class PlayerView implements View {
 		await this.element.loadURL(url)
 
 		this.#player = await Player.for(this.element)
+
+		if(!this.#player)
+			throw new Error(`No player found for '${url}'`)
+
 		await this.#player.bind()
 	}
 }

@@ -9,17 +9,18 @@
 		"paths": {
 			"*": ["node_modules/*"]
 		},
-		"allowSyntheticDefaultImports": true,
-		"inlineSourceMap": true,
+		"removeComments": false,
 		"inlineSources": true,
-		"noImplicitAny": true,
-		"noImplicitThis": true,
-		"noImplicitReturns": true,
+		"inlineSourceMap": true,
 		"esModuleInterop": true,
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
-		"removeComments": false,
-		"strict": false
+		"allowSyntheticDefaultImports": true,
+		"importsNotUsedAsValues": "preserve",
+		"noImplicitAny": true,
+		"noImplicitThis": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true
 	},
 	"include": [
 		"src/**/*"
