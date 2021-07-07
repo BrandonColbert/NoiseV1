@@ -16,7 +16,7 @@ export class Playlist {
 
 	protected constructor(id: string) {
 		this.id = id
-		this.events = new Dispatcher<Playlist.Events>(["changeContents", "delete", "rename"])
+		this.events = new Dispatcher("changeContents", "delete", "rename")
 	}
 
 	private get path(): string {

@@ -1,47 +1,76 @@
 import Generate from "../../utils/generate.js"
 
-type NodeConstructor = new(...args: any[]) => Graph.Node
+type NodeConstructor = new(...args: ConstructorParameters<typeof Graph.Node>) => Graph.Node
 
 export class Graph {
 	private nodes: Map<string, Graph.Node>
 	private nodeRegistry: {
 		nameToCtor: Map<string, NodeConstructor>,
 		ctorToName: Map<NodeConstructor, string>
-		nameToCategory: Map<string, string>
 	}
 
 	public constructor() {
 		this.nodeRegistry = {
 			nameToCtor: new Map<string, NodeConstructor>(),
-			ctorToName: new Map<NodeConstructor, string>(),
-			nameToCategory: new Map<string, string>()
+			ctorToName: new Map<NodeConstructor, string>()
 		}
 
 		this.nodes = new Map<string, Graph.Node>()
 	}
 
 	/**
-	 * Add a new node to the graph
+	 * Create a new node and add it to this graph
+	 * @param type Node type
+	 * @returns Created node instance
+	 */
+	public createNode(type: string): Graph.Node {
+		if(!this.nodeRegistry.nameToCtor.has(type))
+			throw new Error(`Invalid node type ${type}`)
+
+		let ctor = this.nodeRegistry.nameToCtor.get(type)
+		let node = new ctor(this)
+		this.addNode(node)
+
+		return node
+	}
+
+	/**
+	 * Add a node to this graph
 	 * @param node Node instance
 	 */
-	public addNode(node: Graph.Node) {
+	public addNode(node: Graph.Node): void {
+		if(this.nodes.has(node.id))
+			throw new Error(`Node with id ${node.id} is already present in the graph`)
+
 		this.nodes.set(node.id, node)
 	}
 
 	/**
-	 * @param id Id of the node instance
-	 * @returns A node instance by id
-	 */
-	public getNode(id: string): Graph.Node {
-		return this.nodes.get(id)
-	}
-
-	/**
-	 * Removes a node from the graph
+	 * Removes a node from this graph
 	 * @param id Id of the node to remove
 	 */
 	public removeNode(id: string): void {
+		let node = this.nodes.get(id)
+
+		if(!node)
+			return
+
+		for(let field of node.inputFields)
+			node.disconnect(field)
+
+		for(let field of node.outputFields)
+			for(let consumer of node.getConsumers(field))
+				consumer.node.disconnect(consumer.fieldName)
+
 		this.nodes.delete(id)
+	}
+
+	/**
+	 * @param id Id of the node instance
+	 * @returns Node in this graph with the corresponding id
+	 */
+	public getNode(id: string): Graph.Node {
+		return this.nodes.get(id)
 	}
 
 	/**
@@ -66,23 +95,45 @@ export class Graph {
 	}
 
 	/**
-	 * Register a new node type to be used in the graph
-	 * @param typeName Identifying name for the node
-	 * @param typeClass Node class to associate with the name
-	 * @param category
+	 * Propogates all possible nodes
 	 */
-	public registerNodeType<T extends NodeConstructor>(typeName: string, typeClass: T, category: string = ""): void {
-		this.nodeRegistry.nameToCtor.set(typeName, typeClass)
-		this.nodeRegistry.ctorToName.set(typeClass, typeName)
-		this.nodeRegistry.nameToCategory.set(typeName, category)
+	public async walk(): Promise<void> {
+		for(let node of this)
+			if(node.bootstrapper)
+				await node.propogate()
 	}
 
 	/**
-	 * @param typeClass Node class
+	 * Register a new node type to be used in the graph
+	 * @param type Identifying name for the node
+	 * @param ctor Node class to associate with the name
+	 */
+	public registerNodeType<T extends NodeConstructor>(type: string, ctor: T): void {
+		this.nodeRegistry.nameToCtor.set(type, ctor)
+		this.nodeRegistry.ctorToName.set(ctor, type)
+	}
+
+	/**
+	 * @param ctor Node class
 	 * @returns The identifying name of the node class
 	 */
-	public getNodeTypeName<T extends NodeConstructor>(typeClass: T): string {
-		return this.nodeRegistry.ctorToName.get(typeClass)
+	public getNodeType<T extends NodeConstructor>(ctor: T): string {
+		return this.nodeRegistry.ctorToName.get(ctor)
+	}
+
+	/**
+	 * @return All node types
+	 */
+	public getNodeTypes(): string[] {
+		return [...this.nodeRegistry.nameToCtor.keys()]
+	}
+
+	/**
+	 * @param type Identifying name for the node
+	 * @returns Constructor for the node type
+	 */
+	public getNodeConstructor(typeName: string): NodeConstructor {
+		return this.nodeRegistry.nameToCtor.get(typeName)
 	}
 
 	*[Symbol.iterator]() {
@@ -117,7 +168,7 @@ export namespace Graph {
 
 			this.data = data ?? {
 				position: [0, 0],
-				type: graph.getNodeTypeName(this.constructor as NodeConstructor)
+				type: graph.getNodeType(this.constructor as NodeConstructor)
 			}
 
 			this.fields = {
@@ -129,7 +180,12 @@ export namespace Graph {
 
 		/** Name of this node type according to the graph */
 		public get name(): string {
-			return this.graph.getNodeTypeName(this.constructor as NodeConstructor)
+			return this.graph.getNodeType(this.constructor as NodeConstructor)
+		}
+
+		/** Whether inputs are necessary to propogate */
+		public get bootstrapper(): boolean {
+			return this.fields.input.size == 0
 		}
 
 		/** Location of this node in the graph */
@@ -207,6 +263,7 @@ export namespace Graph {
 		/**
 		 * Creates an HTMLElement representing the node's output
 		 */
+		//TODO
 		// public abstract createResultElement(): HTMLElement
 
 		/**
@@ -216,6 +273,9 @@ export namespace Graph {
 		 * @param inputName Name of the field on the target node which receives the value
 		 */
 		public connect(outputName: string, target: Graph.Node, inputName: string): void {
+			if(!Graph.Node.isValidConnection({node: this, fieldName: outputName}, {node: target, fieldName: inputName}))
+				throw new Error(`Invalid connection from ${this.id}:${outputName} -> ${target.id}:${inputName}`)
+
 			this.data.output ??= {}
 			this.data.output[outputName] ??= {}
 			this.data.output[outputName][target.id] ??= []
@@ -231,13 +291,18 @@ export namespace Graph {
 		 * @param inputName Name of this node's input field
 		 */
 		public disconnect(inputName: string): void {
+			if(!this.data.input?.[inputName])
+				return
+
 			let [sourceNodeId, outputName] = this.data.input[inputName]
 
-			let sourceNode = this.graph.getNode(sourceNodeId) as this
-			let fieldNames = sourceNode.data.output[outputName][this.id]
-			fieldNames.splice(fieldNames.indexOf(inputName), 1)
+			let sourceNode = this.graph.getNode(sourceNodeId)
+			let fieldNames = sourceNode.data.output[outputName][this.id].filter(f => f != inputName)
+			sourceNode.data.output[outputName][this.id] = fieldNames
 
 			if(fieldNames.length == 0)
+				delete sourceNode.data.output[outputName][this.id]
+			if(Object.keys(sourceNode.data.output[outputName]).length == 0)
 				delete sourceNode.data.output[outputName]
 			if(Object.keys(sourceNode.data.output).length == 0)
 				delete sourceNode.data.output
@@ -275,9 +340,9 @@ export namespace Graph {
 
 		/**
 		 * @param fieldName Input field name
-		 * @returns The node and output field supplying this input field's value or null if no supplier exists
+		 * @returns The node and output field supplying the specified input field's value or null if no supplier exists
 		 */
-		public getInputSupplier(fieldName: string): Node.FieldReference {
+		public getSupplier(fieldName: string): Node.FieldReference {
 			if(!this.data.input?.[fieldName])
 				return null
 
@@ -316,10 +381,10 @@ export namespace Graph {
 
 		/**
 		 * @param fieldName Output field name
-		 * @returns The nodes and outputs field consuming this output field's value
+		 * @returns The nodes and their corresponding output fields consuming the specified output field's value
 		 */
-		public getOutputConsumers(fieldName: string): Node.FieldReference[] {
-			return Object.entries(this.data.output[fieldName]).flatMap(target => {
+		public getConsumers(fieldName: string): Node.FieldReference[] {
+			return Object.entries(this.data.output?.[fieldName] ?? {}).flatMap(target => {
 				let [targetNodeId, targetFields] = target
 
 				return targetFields.map(targetField => ({
@@ -344,7 +409,7 @@ export namespace Graph {
 		 * @returns String for the specified option field 
 		 */	
 		public getOption(fieldName: string): string {
-			return this.data.options?.[fieldName] ?? this.fields.options.get(fieldName)?.defaultValue
+			return this.data.options?.[fieldName] ?? this.fields.options.get(fieldName)?.defaultValue ?? ""
 		}
 
 		/**
@@ -353,6 +418,16 @@ export namespace Graph {
 		 */
 		public getOptionDescription(fieldName: string): Node.OptionDescription {
 			return this.fields.options.get(fieldName)
+		}
+
+		public static isValidConnection(supplier: Node.FieldReference, consumer: Node.FieldReference): boolean {
+			let supplierDesc = supplier.node.getOutputDescription(supplier.fieldName)
+			let consumerDesc = consumer.node.getInputDescription(consumer.fieldName)
+
+			if(!consumerDesc.type || !supplierDesc.type)
+				return true
+
+			return consumerDesc.type == supplierDesc.type
 		}
 
 		/**

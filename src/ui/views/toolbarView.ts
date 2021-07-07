@@ -81,6 +81,7 @@ export class ToolbarView implements View {
 
 		this.playing = await this.playbackView.views.playerView.player.isPlaying()
 		this.elements.mediaTitle.textContent = event.media.title ?? event.item.query
+		this.elements.mediaTitle.title = this.elements.mediaTitle.textContent
 		this.elements.mediaSite.textContent = this.playbackView.views.playerView.player?.name ?? "?"
 	}
 

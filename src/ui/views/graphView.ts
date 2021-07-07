@@ -5,7 +5,6 @@ import GraphElement from "../elements/graphElement.js"
 export class GraphView implements View {
 	public readonly element: HTMLElement
 	public readonly elements: GraphView.Elements
-	#graph: Graph
 
 	public constructor(element: HTMLElement) {
 		this.element = element
@@ -17,7 +16,7 @@ export class GraphView implements View {
 	}
 
 	public set graph(value: Graph) {
-		if(this.#graph == value)
+		if(value == this.elements.graph?.value)
 			return
 
 		while(this.elements.connections.lastChild)

@@ -104,7 +104,7 @@ export default class PageContent {
 
 					resolve(new PageContent(url, result))
 				} catch(e) {
-					console.log(`Unable to acquire page content for "${url}" due to:\n\n${e}`)
+					console.error(`Unable to acquire page content for "${url}" due to:\n\n${e}`)
 				}
 			}, {once: true} as any)
 		})

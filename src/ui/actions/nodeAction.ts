@@ -2,7 +2,7 @@ import NodeElement from "../elements/nodeElement.js"
 import GraphAction from "./graphAction.js"
 
 export default abstract class NodeAction extends GraphAction {
-	private readonly id: string
+	protected readonly id: string
 
 	public constructor(node: NodeElement) {
 		super(node.graph)

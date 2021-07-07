@@ -2,6 +2,7 @@ import Helper from "../core/helper.js"
 import Courier from "../core/courier.js"
 import Player from "../core/player.js"
 import HelperView from "../ui/views/helperView.js"
+import {remote} from "electron"
 
 let view = new HelperView(document.querySelector("#graph"))
 view.construct()
@@ -21,3 +22,5 @@ async function getHelper(): Promise<Helper> {
 			throw new Error("Invalid helper type")
 	}
 }
+
+;(document.querySelector("#content > #back") as HTMLElement).onclick = async () => remote.getCurrentWindow().webContents.goBack()

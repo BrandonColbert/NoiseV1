@@ -3,6 +3,7 @@ import TextUtils from "../../../utils/textUtils.js"
 import FieldElement from "./fieldElement.js"
 
 export default abstract class ConnectionFieldElement extends FieldElement {
+	public static readonly notchRadius: number = 4
 	public readonly displayName: HTMLElement
 	public readonly notch: HTMLButtonElement
 
@@ -14,6 +15,24 @@ export default abstract class ConnectionFieldElement extends FieldElement {
 		this.notch = document.createElement("button")
 		this.notch.classList.add("iconic")
 		this.append(this.notch)
+	}
+
+	public get reference(): Graph.Node.FieldReference {
+		return {
+			node: this.fieldset.node.value,
+			fieldName: this.name
+		}
+	}
+
+	public get notchPosition(): [number, number] {
+		let rect = this.fieldset.node.getBoundingClientRect()
+		let notchRect = this.notch.getBoundingClientRect()
+
+		let [x, y] = this.fieldset.node.position
+		x += (notchRect.x - rect.x) + notchRect.width / 2
+		y += (notchRect.y - rect.y) + notchRect.height / 2
+
+		return [x, y]
 	}
 
 	public abstract getDescription(): Graph.Node.ConnectionDescription

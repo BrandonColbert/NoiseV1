@@ -60,12 +60,14 @@ export default class PlaylistElement extends DDListElement {
 	}
 
 	protected override attached(): void {
+		super.attached()
 		this.value.getItems().then(items => this.assign(items))
 		this.value.events.on("changeContents", this.onContentsChanged)
 		this.events.on("reorder", this.onChildrenReordered)
 	}
 
 	protected override detached(): void {
+		super.detached()
 		this.value.events.forget("changeContents", this.onContentsChanged)
 		this.events.forget("reorder", this.onChildrenReordered)
 	}
@@ -90,11 +92,6 @@ export default class PlaylistElement extends DDListElement {
 
 	private onChildrenReordered = async (e: DDListElement.Events.Reorder) => {
 		let items = [...this].map(e => e.value)
-
-		let item = items[e.from]
-		items.splice(e.from, 1)
-		items.splice(e.to, 0, item)
-
 		await this.value.setItems(items)
 	}
 }

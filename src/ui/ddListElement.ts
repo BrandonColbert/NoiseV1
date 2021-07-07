@@ -11,14 +11,14 @@ export class DDListElement extends UIElement {
 	public readonly events: Dispatcher<DDListElement.Events>
 
 	/** Used to acquire data from drops */
-	public dataBind?: (index: number) => any
+	public dataBind: (index: number) => any
 
-	private activeElement?: HTMLElement
-	private moveCancel?: () => void
+	private activeElement: HTMLElement
+	private moveCancel: () => void
 
 	public constructor() {
 		super()
-		this.events = new Dispatcher<DDListElement.Events>(["drop", "reorder", "transfer"])
+		this.events = new Dispatcher("drop", "reorder", "transfer")
 	}
 
 	public override get id(): string {
@@ -72,6 +72,9 @@ export class DDListElement extends UIElement {
 	}
 
 	private onChildDrag = (event: DragEvent): void => {
+		if(!event.dataTransfer)
+			return
+
 		;(event.target as HTMLElement).classList.add("reorderTarget")
 		
 		let target = DDListElement.overview(event.target as HTMLElement)
@@ -88,9 +91,6 @@ export class DDListElement extends UIElement {
 			)
 		}
 
-		if(!event.dataTransfer)
-			return
-
 		event.dataTransfer.dropEffect = "move"
 		event.dataTransfer.effectAllowed = "move"
 		event.dataTransfer.setDragImage(DDListElement.image, 0, 0)
@@ -105,10 +105,13 @@ export class DDListElement extends UIElement {
 	}
 
 	private onDropIntoChild = async (event: DragEvent): Promise<void> => {
+		if(!event.dataTransfer)
+			return
+
 		let info: any
 
 		try {
-			info = event.dataTransfer ? JSON.parse(event.dataTransfer.getData("text/plain")) : {}
+			info = JSON.parse(event.dataTransfer.getData("text/plain"))
 		} catch(_) {
 			return
 		}
@@ -121,7 +124,7 @@ export class DDListElement extends UIElement {
 			return
 
 		let sourceList = document.querySelector<DDListElement>(info.selector)
-		sourceList.activeElement = undefined
+		sourceList.activeElement = null
 
 		if(sourceList == this) { //Reorder within list
 			let target = DDListElement.overview(event.target as HTMLElement)
@@ -153,7 +156,7 @@ export class DDListElement extends UIElement {
 			})
 
 			if(canceled) {
-				sourceList.moveCancel?.()
+				sourceList.moveCancel()
 				return
 			}
 
@@ -183,9 +186,9 @@ export class DDListElement extends UIElement {
 
 	private onChildDragEnd = (event: DragEvent): void => {
 		if(this.activeElement)
-			this.moveCancel?.()
+			this.moveCancel()
 		
-		this.activeElement = undefined
+		this.activeElement = null
 		;(event.target as HTMLElement).classList.remove("reorderTarget")
 	}
 

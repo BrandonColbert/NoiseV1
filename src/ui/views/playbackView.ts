@@ -15,7 +15,7 @@ export class PlaybackView extends Playback implements View {
 	public constructor(element: HTMLElement) {
 		super()
 		this.element = element
-		this.events = new Dispatcher(["play", "reset"])
+		this.events = new Dispatcher("play", "reset")
 		this.views = new PlaybackView.Views(this)
 	}
 

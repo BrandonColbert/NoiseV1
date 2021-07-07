@@ -23,7 +23,7 @@ export class Player extends Helper {
 		super()
 		this.id = id
 		this.graph.registerNodeType("media", MediaNode)
-		this.events = new Dispatcher<Player.Events>(["play", "pause", "end"])
+		this.events = new Dispatcher("play", "pause", "end")
 	}
 
 	protected get path(): string {
@@ -125,6 +125,8 @@ export class Player extends Helper {
 	 * Enables detection media events and values on the webview
 	 */
 	public async bind(): Promise<void> {
+		await this.graph.walk()
+
 		this.mediaNode = [...this.graph].find(n => n instanceof MediaNode)
 
 		if(this.mediaNode) {

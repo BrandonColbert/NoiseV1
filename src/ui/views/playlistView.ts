@@ -37,7 +37,6 @@ export class PlaylistView implements View {
 
 		//Reset visuals
 		this.playbackView.reset()
-		this.elements.title.textContent = "Unselected"
 
 		//Remove previous playlist
 		this.playlist?.events.forget("rename", this.onRename)
@@ -64,6 +63,7 @@ export class PlaylistView implements View {
 
 	public construct(): void {
 		this.views.constructAll()
+		this.elements.title.textContent = "Unselected"
 
 		//Add listeners
 		this.elements.selector.addEventListener("click", this.onSelectorClick)

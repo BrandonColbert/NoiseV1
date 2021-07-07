@@ -1,5 +1,7 @@
 export type Callback<Events, T extends keyof Events> = (details: Events[T]) => any | Promise<any>
-export type CallbackFunction = (details: any) => void | Promise<void> 
+export type CallbackFunction = (details: any) => void | Promise<void>
+type UnionToTuple<T extends string, U extends string[] = []> = {[S in T]: Exclude<T, S> extends never ? [...U, S] : UnionToTuple<Exclude<T, S>, [...U, S]>}[T] & string[]
+type Keys<T extends {[index: string]: any}> = keyof T extends string ? keyof T : never
 
 /**
  * Enables dispatching of events in a category
@@ -10,7 +12,7 @@ export default class Dispatcher<Events extends Record<string | number, any>> {
 	/**
 	 * @param eventsType Type containing all possible events
 	 */
-	public constructor(events?: (keyof Events)[]) {
+	public constructor(...events: UnionToTuple<Keys<Events>>) {
 		this.#listeners = new Map<string, Set<CallbackFunction>>()
 
 		if(!events)

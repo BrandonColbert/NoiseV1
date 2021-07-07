@@ -26,24 +26,34 @@ export class Recall {
 
 	/**
 	 * Regress the action chain
+	 * @returns The reversed action or null if regression was not possible
 	 */
-	public undo(): void {
+	public undo(): Recall.Action {
 		if(this.index == -1)
-			return
+			return null
 
-		this.history[this.index].reverse()
+		let action = this.history[this.index]
+		action.reverse()
+
 		this.index = Math.max(-1, this.index - 1)
+
+		return action
 	}
 
 	/**
 	 * Progress the action chain
+	 * @returns The executed action or null if progression was not possible
 	 */
-	public redo(): void {
+	public redo(): Recall.Action {
 		if(this.index == this.history.length - 1)
-			return
+			return null
 
 		this.index = Math.min(this.index + 1, this.history.length - 1)
-		this.history[this.index].execute()
+
+		let action = this.history[this.index]
+		action.execute()
+
+		return action
 	}
 }
 

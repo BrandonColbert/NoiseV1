@@ -20,9 +20,9 @@ export class Courier extends Helper {
 	protected constructor(id: string) {
 		super()
 		this.id = id
-		this.graph.registerNodeType("request", RequestNode, "courier")
-		this.graph.registerNodeType("mediaTitle", MediaTitleNode, "courier")
-		this.graph.registerNodeType("mediaUrl", MediaUrlNode, "courier")
+		this.graph.registerNodeType("request", RequestNode)
+		this.graph.registerNodeType("mediaTitle", MediaTitleNode)
+		this.graph.registerNodeType("mediaUrl", MediaUrlNode)
 	}
 
 	protected get path(): string {
@@ -46,15 +46,13 @@ export class Courier extends Helper {
 	 * @returns Media found based on the query
 	 */
 	public async find(query: string): Promise<Courier.Result> {
-		//Prepare for propogation
+		//Prepare special nodes for propogation
 		for(let node of this.graph)
 			if(node instanceof RequestNode)
 				node.setInput("query", query)
 
-		//Propogate special nodes
-		for(let node of this.graph)
-			if(node instanceof RequestNode)
-				await node.propogate()
+		//Walk entire graph
+		await this.graph.walk()
 
 		//Find the first completed title and url node
 		let completedNodes = [...this.graph].filter(n => n.status == Graph.Node.Status.Complete)

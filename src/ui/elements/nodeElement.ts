@@ -6,7 +6,8 @@ import FieldsetElement from "./node/fieldsetElement.js"
 import InputFieldElement from "./node/inputFieldElement.js"
 import OptionFieldElement from "./node/optionFieldElement.js"
 import OutputFieldElement from "./node/outputFieldElement.js"
-import GraphActions from "../actions/graphActions.js"
+import * as GraphActions from "../actions/graphActions.js"
+import Dropdown from "../dropdown.js"
 
 export default class NodeElement extends UIElement {
 	public readonly value: Graph.Node
@@ -66,11 +67,13 @@ export default class NodeElement extends UIElement {
 		this.name.textContent = TextUtils.transformToName(this.value.name)
 		this.position = this.value.position
 
+		this.name.addEventListener("contextmenu", this.onContextMenu)
 		this.name.addEventListener("mousedown", this.onStartMove)
 		this.addEventListener("mousedown", this.onSelfMouseDown)
 	}
 
 	protected override detached(): void {
+		this.name.addEventListener("contextmenu", this.onContextMenu)
 		this.name.removeEventListener("mousedown", this.onStartMove)
 		this.removeEventListener("mousedown", this.onSelfMouseDown)
 
@@ -121,6 +124,15 @@ export default class NodeElement extends UIElement {
 	}
 
 	private onSelfMouseDown = (e: MouseEvent) => e.stopPropagation()
+
+	private onContextMenu = (e: MouseEvent) => {
+		e.preventDefault()
+
+		Dropdown.show([
+			// {text: "Duplicate"},
+			{text: "Delete", callback: () => this.graph.execute(new GraphActions.Delete(this))}
+		], {position: [`${e.clientX}px`, `${e.clientY}px`]})
+	}
 }
 
 NodeElement.register("ui-node")

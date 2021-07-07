@@ -1,4 +1,5 @@
 import {remote} from "electron"
+import Helper from "../core/helper.js"
 import Courier from "../core/courier.js"
 import Player from "../core/player.js"
 import Dropdown from "../ui/dropdown.js"
@@ -17,54 +18,27 @@ function addItem(items: Element, name: string): HTMLDivElement {
 	return item
 }
 
-function addCourier(courier: Courier): HTMLDivElement {
-	let item = addItem(courierItems, courier.name)
+function addHelper(helper: Helper): HTMLDivElement {
+	let items: Element
+	let hash: string
 
-	item.onclick = async _ => await remote.getCurrentWindow().loadFile(
-		"app/descriptor.html",
-		{hash: `courier:${courier.id}`
-	})
-
-	item.oncontextmenu = e => {
-		e.preventDefault()
-
-		Dropdown.show([
-			{text: "Rename", callback: async () => {
-				let target = e.target as HTMLElement
-
-				let oldName = target.textContent
-				let newName = await TextUtils.rename(target)
-
-				if(!newName) {
-					target.textContent = oldName
-					return
-				}
-
-				courier.name = newName
-				courier.save()
-			}},
-			{text: "Duplicate", callback: async () => {
-				let newCourier = await courier.duplicate()
-				addCourier(newCourier)
-			}},
-			{text: "Delete", callback: async () => {
-				item.remove()
-				
-				await courier.delete()
-			}}
-		], {position: [`${e.clientX}px`, `${e.clientY}px`]})
+	switch(true) {
+		case helper instanceof Courier:
+			items = courierItems
+			hash = `courier:${(helper as Courier).id}`
+			break
+		case helper instanceof Player:
+			items = playerItems
+			hash = `player:${(helper as Player).id}`
+			break
 	}
 
-	return item
-}
-
-function addPlayer(player: Player): HTMLDivElement {
-	let item = addItem(playerItems, player.name)
+	let item = addItem(items, helper.name)
 
 	item.onclick = async _ => await remote.getCurrentWindow().loadFile(
 		"app/descriptor.html",
-		{hash: `player:${player.id}`
-	})
+		{hash: hash}
+	)
 
 	item.oncontextmenu = e => {
 		e.preventDefault()
@@ -81,17 +55,17 @@ function addPlayer(player: Player): HTMLDivElement {
 					return
 				}
 
-				player.name = newName
-				player.save()
+				helper.name = newName
+				helper.save()
 			}},
 			{text: "Duplicate", callback: async () => {
-				let newPlayer = await player.duplicate()
-				addPlayer(newPlayer)
+				let newHelper = await helper.duplicate()
+				addHelper(newHelper)
 			}},
 			{text: "Delete", callback: async () => {
 				item.remove()
 				
-				await player.delete()
+				await helper.delete()
 			}}
 		], {position: [`${e.clientX}px`, `${e.clientY}px`]})
 	}
@@ -112,7 +86,7 @@ function addPlayer(player: Player): HTMLDivElement {
 	await courier.save()
 
 	item.remove()
-	addCourier(courier)
+	addHelper(courier)
 }
 
 ;(document.querySelector("#players .item.placeholder") as HTMLElement).onclick = async _ => {
@@ -128,7 +102,7 @@ function addPlayer(player: Player): HTMLDivElement {
 	await player.save()
 
 	item.remove()
-	addPlayer(player)
+	addHelper(player)
 }
 
 ;(document.querySelector("#content > #back") as HTMLElement).onclick = async _ => {
@@ -143,8 +117,8 @@ function addPlayer(player: Player): HTMLDivElement {
 	players.sort((a, b) => a.name.localeCompare(b.name))
 
 	for(let courier of couriers)
-		addCourier(courier)
+		addHelper(courier)
 
 	for(let player of players)
-		addPlayer(player)
+		addHelper(player)
 })()

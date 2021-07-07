@@ -3,23 +3,33 @@ import Graph from "../../core/nodes/graph.js"
 import GraphAction from "../actions/graphAction.js"
 import UIElement from "../uiElement.js"
 import NodeElement from "./nodeElement.js"
+import Dispatcher from "../../utils/dispatcher.js"
+import Autosearch from "../autosearch.js"
+import * as GraphActions from "../actions/graphActions.js"
 
-export default class GraphElement extends UIElement {
+export class GraphElement extends UIElement {
+	public readonly events: Dispatcher<GraphElement.Events>
 	public readonly value: Graph
 	public readonly connections: SVGElement
-	private actions: Recall
+	private actions: GraphElement.History
 	private onPan: (event: MouseEvent) => void
+	#pointer: [number, number] = [0, 0]
 
 	public constructor(graph: Graph, connections: SVGElement) {
 		super()
+		this.events = new Dispatcher("execute", "reverse")
 		this.value = graph
 		this.connections = connections
-		this.actions = new Recall()
+		this.actions = new GraphElement.History(this)
 	}
 
 	/** Number of nodes in this graph */
 	public get size(): number {
 		return this.children.length
+	}
+
+	public get pointer(): [number, number] {
+		return this.#pointer
 	}
 
 	public get zoom(): number {
@@ -69,6 +79,8 @@ export default class GraphElement extends UIElement {
 	public execute(action: GraphAction): void {
 		this.actions.record(action)
 		action.execute()
+
+		this.events.fire("execute", {action: action})
 	}
 
 	public *[Symbol.iterator](): IterableIterator<NodeElement> {
@@ -82,6 +94,7 @@ export default class GraphElement extends UIElement {
 		this.addEventListener("mouseleave", this.onStopPan)
 		this.addEventListener("wheel", this.onMouseWheel)
 		this.addEventListener("auxclick", this.onMouseClick)
+		this.addEventListener("mousemove", this.onMouseMove)
 		document.body.addEventListener("keydown", this.onKeyDown)
 
 		for(let node of this.value)
@@ -97,6 +110,7 @@ export default class GraphElement extends UIElement {
 		this.removeEventListener("mouseleave", this.onStopPan)
 		this.removeEventListener("wheel", this.onMouseWheel)
 		this.removeEventListener("auxclick", this.onMouseClick)
+		this.removeEventListener("mousemove", this.onMouseMove)
 		document.body.removeEventListener("keydown", this.onKeyDown)
 
 		for(let nodeElement of this)
@@ -143,7 +157,11 @@ export default class GraphElement extends UIElement {
 		}
 	}
 
-	private onKeyDown = (event: KeyboardEvent) => {
+	private onMouseMove = (event: MouseEvent) => {
+		this.#pointer = [event.clientX, event.clientY]
+	}
+
+	private onKeyDown = async (event: KeyboardEvent) => {
 		if(document.activeElement != document.body)
 			return
 
@@ -162,8 +180,76 @@ export default class GraphElement extends UIElement {
 				}
 
 				break
+			case " ":
+				if(event.shiftKey || event.ctrlKey)
+					return
+
+				event.preventDefault()
+
+				let [mouseX, mouseY] = this.pointer
+
+				let result = await Autosearch.show(this.value.getNodeTypes(), {
+					position: this.pointer,
+					count: 6
+				})
+
+				if(!result || this.value.getNodeTypes().indexOf(result) == -1)
+					break
+
+				this.execute(new GraphActions.Create(this, result, [
+					mouseX - this.offsetLeft - this.pan[0],
+					mouseY - this.offsetTop - this.pan[1]
+				]))
+
+				break
+		}
+	}
+}
+
+export namespace GraphElement {
+	export class History extends Recall {
+		private readonly graph: GraphElement
+
+		public constructor(graph: GraphElement) {
+			super()
+			this.graph = graph
+		}
+
+		public override undo(): Recall.Action {
+			let action = super.undo()
+
+			if(!action)
+				return null
+
+			this.graph.events.fire("execute", {action: action})
+
+			return action
+		}
+
+		public override redo(): Recall.Action {
+			let action = super.redo()
+
+			if(!action)
+				return null
+
+			this.graph.events.fire("reverse", {action: action})
+
+			return action
+		}
+	}
+
+	export interface Events {
+		execute: Events.Action
+		reverse: Events.Action
+	}
+
+	export namespace Events {
+		export interface Action {
+			/** Related action */
+			action: Recall.Action
 		}
 	}
 }
 
 GraphElement.register("ui-graph")
+export default GraphElement

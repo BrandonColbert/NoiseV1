@@ -1,9 +1,10 @@
 import TextUtils from "../../../utils/textUtils.js"
 import FieldElement from "./fieldElement.js"
+import * as GraphActions from "../../actions/graphActions.js"
 
 export default class OptionFieldElement extends FieldElement {
-	protected displayName: HTMLElement
-	protected inputText: HTMLInputElement
+	public readonly displayName: HTMLElement
+	public readonly inputText: HTMLInputElement
 
 	public constructor(name: string) {
 		super(name)
@@ -17,6 +18,8 @@ export default class OptionFieldElement extends FieldElement {
 		let desc = this.fieldset.node.value.getOptionDescription(this.name)
 		this.displayName.textContent = `${desc.name ?? TextUtils.transformToName(this.name)}`
 		this.inputText.value = this.fieldset.node.value.getOption(this.name)
+
+		this.inputText.addEventListener("change", this.onTextChange)
 	}
 
 	protected override detached(): void {
@@ -24,7 +27,11 @@ export default class OptionFieldElement extends FieldElement {
 
 		this.displayName.textContent = ""
 		this.inputText.value = ""
+
+		this.inputText.removeEventListener("change", this.onTextChange)
 	}
+
+	private onTextChange = () => this.fieldset.node.graph.execute(new GraphActions.SetOption(this, this.inputText.value))
 }
 
 OptionFieldElement.register()
