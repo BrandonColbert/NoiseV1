@@ -7,7 +7,22 @@ import {remote} from "electron"
 let view = new HelperView(document.querySelector("#graph"))
 view.construct()
 
-getHelper().then(helper => view.helper = helper)
+getHelper().then(helper => {
+	view.helper = helper
+
+	let prefix: string
+
+	switch(true) {
+		case helper instanceof Player:
+			prefix = "Player"
+			break
+		case helper instanceof Courier:
+			prefix = "Courier"
+			break
+	}
+
+	document.querySelector("#description #name").textContent = `${prefix} | ${helper.name}`
+})
 
 async function getHelper(): Promise<Helper> {
 	let hash = location.hash.slice(1)

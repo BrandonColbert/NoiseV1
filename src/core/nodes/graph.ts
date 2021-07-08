@@ -154,7 +154,7 @@ export namespace Graph {
 		private input: Map<string, any>
 		private output: Map<string, any>
 		private fields: {
-			input: Map<string, Node.ConnectionDescription>,
+			input: Map<string, Node.InputDescription>,
 			output: Map<string, Node.ConnectionDescription>,
 			options: Map<string, Node.OptionDescription>
 		}
@@ -172,9 +172,9 @@ export namespace Graph {
 			}
 
 			this.fields = {
-				input: new Map<string, Node.ConnectionDescription>(),
-				output: new Map<string, Node.ConnectionDescription>(),
-				options: new Map<string, Node.OptionDescription>()
+				input: new Map(),
+				output: new Map(),
+				options: new Map()
 			}
 		}
 
@@ -214,11 +214,13 @@ export namespace Graph {
 
 		/** State of input satisfaction */
 		public get status(): Node.Status {
+			let satisfied = (fieldName: string) => this.input.has(fieldName) || this.getInputDescription(fieldName).optional == true
+
 			let inputKeys = [...this.inputFields]
 
-			if(inputKeys.every(v => this.input.has(v)))
+			if(inputKeys.every(v => satisfied(v)))
 				return Node.Status.Complete
-			else if(inputKeys.some(v => this.input.has(v)))
+			else if(inputKeys.some(v => satisfied(v)))
 				return Node.Status.Partial
 			else
 				return Node.Status.Latent
@@ -294,6 +296,8 @@ export namespace Graph {
 			if(!this.data.input?.[inputName])
 				return
 
+			this.input.delete(inputName)
+
 			let [sourceNodeId, outputName] = this.data.input[inputName]
 
 			let sourceNode = this.graph.getNode(sourceNodeId)
@@ -319,7 +323,10 @@ export namespace Graph {
 		 * @param value Value to assign
 		 */
 		public setInput(fieldName: string, value: any): void {
-			this.input.set(fieldName, value)
+			if(value != null)
+				this.input.set(fieldName, value)
+			else
+				this.input.delete(fieldName)
 		}
 
 		/**
@@ -334,7 +341,7 @@ export namespace Graph {
 		 * @param fieldName Input field name
 		 * @returns Description of the specified input field
 		 */
-		public getInputDescription(fieldName: string): Node.ConnectionDescription {
+		public getInputDescription(fieldName: string): Node.InputDescription {
 			return this.fields.input.get(fieldName)
 		}
 
@@ -435,7 +442,7 @@ export namespace Graph {
 		 * @param fieldName Field name
 		 * @param desc Field description
 		 */
-		protected addInputField(fieldName: string, desc: Node.ConnectionDescription = {}): void {
+		protected addInputField(fieldName: string, desc: Node.InputDescription = {}): void {
 			this.fields.input.set(fieldName, desc)
 		}
 
@@ -531,6 +538,13 @@ export namespace Graph {
 			 * If this field is describing an input, its connection will be restricted to output fields with the same type.
 			 */
 			type?: string
+		}
+
+		export interface InputDescription extends ConnectionDescription {
+			/**
+			 * Whether a value is required for the connection to be satisfied
+			 */
+			optional?: boolean
 		}
 		
 		export interface OptionDescription extends FieldDescription {

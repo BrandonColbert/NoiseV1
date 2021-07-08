@@ -133,21 +133,33 @@
 			--icon-size: var(--size);
 
 			grid-area: icon;
+
+			border: none;
+			border-radius: 50%;
+			outline: none;
+
+			cursor: pointer;
+			
+			-webkit-user-select: none;
 		}
 
-			#volume > div[data-level="up"] {
+			#volume > div:active {
+				background-color: var(--color-foreground-variant);
+			}
+
+			#volume > div[data-level="high"] {
 				--icon-url: url("app://resources/icons/volume_up.svg");
 			}
 
-			#volume > div[data-level="down"] {
+			#volume > div[data-level="medium"] {
 				--icon-url: url("app://resources/icons/volume_down.svg");
 			}
 
-			#volume > div[data-level="off"] {
+			#volume > div[data-level="low"] {
 				--icon-url: url("app://resources/icons/volume_off.svg");
 			}
 
-			#volume > div[data-level="mute"] {
+			#volume > div[data-muted="true"] {
 				--icon-url: url("app://resources/icons/volume_mute.svg");
 			}
 

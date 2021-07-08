@@ -53,8 +53,11 @@ export default class PlaylistItemElement extends UIElement {
 	public assign(index: number, item: Playlist.Item): void {
 		this.#value = item
 
-		this.text.textContent = this.#value.query
-		this.text.title = this.#value.query
+		this.text.textContent = item.query
+		this.text.title = item.query
+		
+		if(item.courier)
+			this.text.title = `${item.courier}: ${this.text.title}`
 
 		this.text.onclick = e => {
 			e.preventDefault()

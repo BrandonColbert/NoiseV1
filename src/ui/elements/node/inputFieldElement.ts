@@ -14,7 +14,7 @@ export class InputFieldElement extends ConnectionFieldElement {
 		return this.fieldset.node.value.getSupplier(this.name)
 	}
 
-	public getDescription(): Graph.Node.ConnectionDescription {
+	public getDescription(): Graph.Node.InputDescription {
 		return this.fieldset.node.value.getInputDescription(this.name)
 	}
 

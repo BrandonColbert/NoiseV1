@@ -8,6 +8,11 @@
 		align-self: center;
 	}
 
+	#description #name {
+		margin-left: 60px;
+		font-size: 30px;
+	}
+
 	#description #selector {
 		--icon-size: 40px;
 		--icon-url: url("app://resources/icons/menu-24px.svg");

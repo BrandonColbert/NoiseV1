@@ -8,6 +8,8 @@ playback.construct()
 //Set playlist and courier to last used
 getRecentCourier().then(async courier => playback.views.playlistView.views.entrybarView.courier = courier)
 getRecentPlaylist().then(async playlist => playback.views.playlistView.playlist = playlist)
+playback.views.toolbarView.volume = getRecentVolume()
+playback.views.toolbarView.muted = getRecentMute()
 
 async function getRecentPlaylist(): Promise<Playlist> {
 	let id = localStorage.getItem("playlist")
@@ -38,4 +40,30 @@ async function getRecentCourier(): Promise<Courier> {
 	}
 
 	return null
+}
+
+function getRecentVolume(): number {
+	let volume = localStorage.getItem("volume")
+
+	if(volume)
+		return parseFloat(volume)
+
+	return 1
+}
+
+function getRecentMute(): boolean {
+	let muted = localStorage.getItem("muted")
+
+	if(muted) {
+		switch(muted) {
+			case "true":
+				return true
+			case "false":
+				return false
+			default:
+				return undefined
+		}
+	}
+
+	return false
 }

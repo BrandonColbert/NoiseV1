@@ -4,6 +4,8 @@
 	height: var(--titlebar-height);
 	
 	display: block;
+
+	background: var(--color-background);
 }
 
 .titlebar > :nth-child(1) {
@@ -15,8 +17,6 @@
 	height: var(--titlebar-height);
 
 	margin: 5px 5px 0px 5px;
-
-	background: var(--color-background);
 }
 
 .titlebar > :nth-child(2) {

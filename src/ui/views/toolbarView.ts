@@ -7,11 +7,13 @@ export class ToolbarView implements View {
 	public readonly playbackView: PlaybackView
 	public readonly element: HTMLElement
 	public readonly elements: ToolbarView.Elements
+	#volume: Volume
 
 	public constructor(playbackView: PlaybackView, element: HTMLElement) {
 		this.playbackView = playbackView
 		this.element = element
 		this.elements = new ToolbarView.Elements(this)
+		this.#volume = new Volume()
 	}
 
 	/** Which icon the playpause icon is */
@@ -30,9 +32,38 @@ export class ToolbarView implements View {
 		this.elements.playpause.dataset.playing = value.toString()
 	}
 
+	public get volume(): number {
+		return this.elements.volumeSlider.valueAsNumber
+	}
+
+	public set volume(value: number) {	
+		if(value == 0)
+			this.elements.volumeIcon.dataset.level = "low"
+		else if(value < 0.5)
+			this.elements.volumeIcon.dataset.level = "medium"
+		else
+			this.elements.volumeIcon.dataset.level = "high"
+
+		this.elements.volumeSlider.valueAsNumber = value
+	}
+
+	public get muted(): boolean {
+		switch(this.elements.volumeIcon.dataset.muted) {
+			case "true":
+				return true
+			case "false":
+				return false
+			default:
+				return undefined
+		}
+	}
+
+	public set muted(value: boolean) {
+		this.elements.volumeIcon.dataset.muted = value.toString()
+	}
+
 	public construct(): void {
 		this.resetInfo()
-		this.updateVolume()
 
 		this.playbackView.events.on("play", this.onPlaybackPlay)
 		this.playbackView.events.on("reset", this.onPlaybackReset)
@@ -41,6 +72,7 @@ export class ToolbarView implements View {
 		this.elements.playpause.addEventListener("click", this.onPlaypauseClick)
 		this.elements.playNext.addEventListener("click", this.onPlayNextClick)
 		this.elements.volumeSlider.addEventListener("input", this.onVolumeSliderInput)
+		this.elements.volumeIcon.addEventListener("click", this.onVolumeIconClick)
 	}
 
 	public deconstruct(): void {
@@ -53,20 +85,7 @@ export class ToolbarView implements View {
 		this.elements.playpause.removeEventListener("click", this.onPlaypauseClick)
 		this.elements.playNext.removeEventListener("click", this.onPlayNextClick)
 		this.elements.volumeSlider.removeEventListener("input", this.onVolumeSliderInput)
-	}
-
-	private updateVolume(): void {
-		let volume = Volume.getVolume()
-		this.elements.volumeSlider.valueAsNumber = volume
-
-		if(volume == 0)
-			this.elements.volumeIcon.dataset.level = "off"
-		else if(volume < 0.25)
-			this.elements.volumeIcon.dataset.level = "mute"
-		else if(volume < 0.75)
-			this.elements.volumeIcon.dataset.level = "down"
-		else
-			this.elements.volumeIcon.dataset.level = "up"
+		this.elements.volumeIcon.removeEventListener("click", this.onVolumeIconClick)
 	}
 
 	private resetInfo(): void {
@@ -83,6 +102,9 @@ export class ToolbarView implements View {
 		this.elements.mediaTitle.textContent = event.media.title ?? event.item.query
 		this.elements.mediaTitle.title = this.elements.mediaTitle.textContent
 		this.elements.mediaSite.textContent = this.playbackView.views.playerView.player?.name ?? "?"
+
+		this.#volume.setVolume(this.volume)
+		this.#volume.setMuted(this.muted)
 	}
 
 	private onPlaybackReset = () => {
@@ -111,34 +133,19 @@ export class ToolbarView implements View {
 			await this.playbackView.play(0)
 	}
 
-	private onVolumeSliderInput = (event: Event) => {
-		let target = event.target as HTMLInputElement
-		Volume.setVolume(target.valueAsNumber)
+	private onVolumeSliderInput = () => {
+		this.volume = this.elements.volumeSlider.valueAsNumber
 
-		console.log(Math.round(target.valueAsNumber * 100))
+		this.#volume.setVolume(this.volume)
+		localStorage.setItem("volume", this.volume.toString())
+	}
 
-		// this.playbackView.playerView.element.executeJavaScript(`noise.volume.setVolume(${target.valueAsNumber})`)
+	private onVolumeIconClick = () => {
+		console.log(this.muted)
+		this.muted = !this.muted
 
-		// for(let webContents of remote.webContents.getAllWebContents()) {
-		// 	webContents.executeJavaScript(`
-		// 		try {
-		// 			noise.volume.setVolume(${target.valueAsNumber})
-		// 			console.log(noise.volume.getVolume())
-		// 		} catch(e) {
-		// 			console.log(e)
-		// 		}
-
-		// 		try {
-		// 			const Voume = require("app/js/utils/volume.js")
-		// 			Volume.setVolume(${target.valueAsNumber})
-		// 			console.log(Volume.getVolume())
-		// 		} catch(e) {
-		// 			console.log(e)
-		// 		}
-		// 	`)
-		// }
-
-		this.updateVolume()
+		this.#volume.setMuted(this.muted)
+		localStorage.setItem("muted", this.muted.toString())
 	}
 }
 
