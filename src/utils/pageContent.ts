@@ -60,28 +60,28 @@ export default class PageContent {
 		let time = Date.now()
 
 		for(let i = PageContent.recent.length - 1; i >= 0; i--)
-			if(PageContent.recent[i] < time - settings.recency) {
+			if(PageContent.recent[i] < time - settings.fetching.recency) {
 				PageContent.recent.splice(0, i + 1)
 				break
 			}
 
 		PageContent.recent.push(time)
 
-		if(PageContent.recent.length > settings.thresholdAbort) {
+		if(PageContent.recent.length > settings.fetching.thresholdAbort) {
 			PageContent.allowed = false
-			console.error("Recency threshold reached, accumulation disabled. Manually restart")
+			console.error("Recency threshold reached, content fetching disabled. Refresh window with 'f5' or 'ctrl+r'.")
 		}
 
 		if(!PageContent.allowed)
 			return Promise.reject("Accumulation disabled")
 
-		if(PageContent.recent.length > settings.thresholdWait) {
-			await new Promise(r => setTimeout(r, settings.recency))
+		if(PageContent.recent.length > settings.fetching.thresholdWait) {
+			await new Promise<void>(r => setTimeout(() => r(), settings.fetching.recency))
 
 			if(PageContent.recent.length > 0 && PageContent.recent[PageContent.recent.length - 1] == time)
 				PageContent.recent.push(Date.now())
 			else
-				return Promise.reject("Ignored")
+				return Promise.reject(`Ignored content fetch for '${url}'`)
 		}
 
 		if(!PageContent.allowed)
@@ -105,6 +105,7 @@ export default class PageContent {
 					resolve(new PageContent(url, result))
 				} catch(e) {
 					console.error(`Unable to acquire page content for "${url}" due to:\n\n${e}`)
+					reject(e)
 				}
 			}, {once: true} as any)
 		})

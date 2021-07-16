@@ -1,0 +1,76 @@
+@import "../style.css";
+
+input {
+	background: var(--color-foreground);
+	color: var(--color-text);
+
+	border: 2px solid transparent;
+}
+
+	input:focus {
+		outline: none;
+
+		border: 2px solid var(--color-primary);
+		border-radius: 5px;
+	}
+
+#content {
+	margin: 50px 15%;
+}
+
+#title {
+	display: inline-block;
+
+	font-size: 36px;
+
+	text-decoration: underline;
+
+	margin: 0px 0px 20px 0px;
+}
+
+#back {
+	--icon-size: 40px;
+	--icon-url: url("app://resources/icons/arrow_back_24dp.svg");
+
+	position: fixed;
+	top: 10px;
+	left: 10px;
+
+	border: none;
+	border-radius: 50%;
+	outline: none;
+
+	cursor: pointer;
+	-webkit-app-region: no-drag;
+}
+
+	#back:hover {
+		background-color: var(--color-foreground);
+	}
+
+	#back:active {
+		background-color: var(--color-foreground-variant);
+	}
+
+.options > div {
+	display: block;
+
+	padding: 5px 0px;
+}
+
+	.options > div > * {
+		display: inline-block;
+	}
+
+	.options > div > :nth-child(1) {
+		width: 200px;
+
+		margin: 0 0 15px 0;
+
+		font-size: 18px;
+	}
+
+	.options > div > :nth-child(2) {
+		width: 200px;
+		padding: 5px 5px;
+	}

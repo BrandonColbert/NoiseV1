@@ -1,12 +1,11 @@
 import {promises as fs} from "fs"
 import path from "path"
-import TextUtils from "../utils/textUtils.js"
+import filenamify from "filenamify"
 import Graph from "./nodes/graph.js"
 import Noise from "./noise.js"
 import Helper from "./helper.js"
-import RequestNode from "../core/nodes/requestNode.js"
-import MediaUrlNode from "../core/nodes/mediaUrlNode.js"
-import MediaTitleNode from "../core/nodes/mediaTitleNode.js"
+import CourierNode from "./nodes/courierNode.js"
+import CourierResultNode from "./nodes/courierResultNode.js"
 
 type Nodes = {[id: string]: Graph.Node.Data}
 
@@ -15,14 +14,17 @@ type Nodes = {[id: string]: Graph.Node.Data}
  */
 export class Courier extends Helper {
 	public readonly id: string
-	public name: string
+	#name: string
 
 	protected constructor(id: string) {
 		super()
 		this.id = id
-		this.graph.registerNodeType("request", RequestNode)
-		this.graph.registerNodeType("mediaTitle", MediaTitleNode)
-		this.graph.registerNodeType("mediaUrl", MediaUrlNode)
+		this.graph.registerNodeType("courier", CourierNode)
+		this.graph.registerNodeType("courier.result", CourierResultNode)
+	}
+
+	public get name(): string {
+		return this.#name
 	}
 
 	protected get path(): string {
@@ -37,7 +39,7 @@ export class Courier extends Helper {
 	}
 
 	protected set info(value: Courier.Info) {
-		this.name = value.name
+		this.#name = value.name
 		this.graph.setDataset(value.nodes)
 	}
 
@@ -48,7 +50,7 @@ export class Courier extends Helper {
 	public async find(query: string): Promise<Courier.Result> {
 		//Prepare special nodes for propogation
 		for(let node of this.graph)
-			if(node instanceof RequestNode)
+			if(node instanceof CourierNode)
 				node.setInput("query", query)
 
 		//Walk entire graph
@@ -56,8 +58,8 @@ export class Courier extends Helper {
 
 		//Find the first completed title and url node
 		let completedNodes = [...this.graph].filter(n => n.status == Graph.Node.Status.Complete)
-		let titleNode = completedNodes.find(n => n instanceof MediaTitleNode)
-		let urlNode = completedNodes.find(n => n instanceof MediaUrlNode)
+		let titleNode = completedNodes.find(n => n instanceof CourierResultNode)
+		let urlNode = completedNodes.find(n => n instanceof CourierResultNode)
 
 		if(!urlNode)
 			return null
@@ -81,25 +83,30 @@ export class Courier extends Helper {
 		await fs.unlink(this.path)
 	}
 
-	public async duplicate(): Promise<Courier> {
-		let path: string
-		let index = 0
+	public async duplicate(name?: string): Promise<Courier> {
+		if(!name) {
+			let index = 0
 
-		while(true) {
-			++index
-			path = `${this.path.slice(0, -".json".length)}_copy_${index}.json`
+			while(index <= 100) {
+				++index
+				name = `${this.name} - Copy (${index})`
 
-			try {
-				await fs.access(path)
-			} catch {
-				break
+				try {
+					await fs.access(`${Courier.path}/${filenamify(name.toLowerCase())}.json`)
+				} catch {
+					break
+				}
 			}
 		}
 
+		let courier = await Courier.create(name)
+
+		if(!courier)
+			return null
+
 		let info = JSON.parse(JSON.stringify(this.info)) as Courier.Info
-		info.name = `${this.name} - Copy (${index})`
-		
-		let courier = new Courier(`${this.id}_copy_${index}`)
+		info.name = name
+
 		courier.info = info
 		await courier.save()
 
@@ -127,24 +134,8 @@ export class Courier extends Helper {
 		return courier
 	}
 
-	public static async create(name: string): Promise<Courier>
-	public static async create(id: string, name: string): Promise<Courier>
-	public static async create(par1: string, par2?: string): Promise<Courier> {
-		let id: string
-		let name: string
-
-		if(par2) {
-			id = par1
-			name = par2
-		} else {
-			name = par1
-			id = encodeURI(TextUtils.simplify(name))
-		}
-
-		if(!name)
-			return null
-
-		let courier = new Courier(id)
+	public static async create(name: string): Promise<Courier> {
+		let courier = new Courier(filenamify(name.toLowerCase()))
 
 		try {
 			await fs.access(courier.path)

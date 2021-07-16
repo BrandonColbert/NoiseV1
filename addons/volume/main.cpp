@@ -4,7 +4,6 @@
 #include <limits>
 #include <set>
 #include <unordered_map>
-#include <sstream>
 
 #include <v8.h>
 #include <node.h>
@@ -195,7 +194,6 @@ class Volume : public ObjectWrap {
 			sessionEnumerator->GetCount(&sessionCount);
 
 			auto subprocesses = get_sibling_processes(GetCurrentProcessId());
-			set<DWORD> subprocessSet(subprocesses.begin(), subprocesses.end());
 
 			for(auto i = 0; i < sessionCount; i++) {
 				IAudioSessionControl *control;
@@ -208,7 +206,7 @@ class Volume : public ObjectWrap {
 				control2->GetProcessId(&id);
 				control2->Release();
 
-				if(subprocessSet.find(id) != subprocessSet.end()) {
+				if(subprocesses.find(id) != subprocesses.end()) {
 					control->QueryInterface(IID_PPV_ARGS(&audio));
 
 					control->Release();

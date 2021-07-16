@@ -1,6 +1,6 @@
 {
 	"name": "noise",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Configurable playlist creator",
 	"author": "Brandon Colbert",
 	"url": "https://brandoncolbert.github.io/projects/noise.html",
@@ -50,6 +50,7 @@
 		"electron-builder": "^22.10.5"
 	},
 	"dependencies": {
+		"filenamify": "^4.3.0",
 		"uuid": "^8.3.2"
 	}
 }

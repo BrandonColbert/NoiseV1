@@ -102,6 +102,7 @@ async function loadExtensions(): Promise<void> {
 			zoomFactor: 1 / scale,
 			contextIsolation: false,
 			nodeIntegration: true,
+			// worldSafeExecuteJavaScript: false,
 			enableRemoteModule: true,
 			webviewTag: true
 		}

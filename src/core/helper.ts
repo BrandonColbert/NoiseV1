@@ -18,7 +18,6 @@ import StringSimplifyNode from "./nodes/stringSimplifyNode.js"
 
 export default abstract class Helper {
 	public readonly graph: Graph
-	public abstract name: string
 
 	protected constructor() {
 		this.graph = new Graph()
@@ -40,9 +39,11 @@ export default abstract class Helper {
 		this.graph.registerNodeType("branch.coalesce", BranchCoalesceNode)
 	}
 
+	public abstract get name(): string
+
 	public abstract save(): Promise<void>
 
 	public abstract delete(): Promise<void>
 
-	public abstract duplicate(): Promise<Helper>
+	public abstract duplicate(name?: string): Promise<Helper>
 }

@@ -85,6 +85,13 @@ export default class NodeElement extends UIElement {
 	}
 
 	private onStartMove = (startEvent: MouseEvent) => {
+		switch(startEvent.button) {
+			case 0:
+				break
+			default:
+				return
+		}
+
 		startEvent.stopPropagation()
 
 		this.graph.append(this)

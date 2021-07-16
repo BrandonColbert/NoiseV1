@@ -64,18 +64,7 @@ export namespace Noise {
 
 	export interface Settings {
 		theme: Settings.Theme
-	
-		/** Default courier to use when adding a new media query */
-		defaultCourier: string
-	
-		/** Duration in milliseconds to remember Accumulator search times */
-		recency: number
-	
-		/** Maximum number of Accumulator searches within recency seconds before waiting */
-		thresholdWait: number
-	
-		/** Maximum number of Accumulator searches within recency seconds before aborting */
-		thresholdAbort: number
+		fetching: Settings.Fetching
 	}
 
 	export namespace Settings {
@@ -88,6 +77,17 @@ export namespace Noise {
 			primary: string
 			"primary-variant": string
 			text: string
+		}
+
+		export interface Fetching {
+			/** Duration in milliseconds to remember search times */
+			recency: number
+
+			/** Maximum number of searches within 'recency' seconds before waiting */
+			thresholdWait: number
+
+			/** Maximum number of searches within 'recency' seconds before aborting */
+			thresholdAbort: number
 		}
 	}
 }

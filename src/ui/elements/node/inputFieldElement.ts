@@ -25,6 +25,18 @@ export class InputFieldElement extends ConnectionFieldElement {
 	protected override attached(): void {
 		super.attached()
 
+		if(this.getDescription().optional) {
+			let typeText = this.displayName.querySelector("div")
+
+			if(!typeText) {
+				typeText = document.createElement("div")
+				typeText.textContent = `()`
+				this.displayName.append(typeText)
+			}
+
+			typeText.textContent = `${typeText.textContent.slice(0, -1)}?${typeText.textContent.slice(-1)}`
+		}
+
 		this.connector = new InputFieldElement.Connector(this)
 		this.fieldset.node.graph.connections.append(this.connector.element)
 		this.visualize()

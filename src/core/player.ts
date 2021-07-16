@@ -5,8 +5,9 @@ import Generate from "../utils/generate.js"
 import Helper from "./helper.js"
 import Noise from "./noise.js"
 import Graph from "./nodes/graph.js"
-import MediaNode from "./nodes/mediaNode.js"
 import Dispatcher from "../utils/dispatcher.js"
+import PlayerResultNode from "./nodes/playerResultNode.js"
+import PlayerNode from "./nodes/playerNode.js"
 
 type Nodes = {[id: string]: Graph.Node.Data}
 
@@ -14,15 +15,13 @@ export class Player extends Helper {
 	public readonly id: string
 	public readonly events: Dispatcher<Player.Events>
 	public name: string
-	private urlPattern: string
-	private urlRegex: RegExp
 	private view: WebviewTag
-	private mediaNode?: Graph.Node
+	private playerResultNode?: Graph.Node
 
 	protected constructor(id: string) {
 		super()
 		this.id = id
-		this.graph.registerNodeType("media", MediaNode)
+		this.graph.registerNodeType("player.result", PlayerResultNode)
 		this.events = new Dispatcher("play", "pause", "end")
 	}
 
@@ -33,23 +32,20 @@ export class Player extends Helper {
 	protected get info(): Player.Info {
 		return {
 			name: this.name,
-			urlPattern: this.urlPattern,
 			nodes: this.graph.getDataset()
 		}
 	}
 
 	protected set info(value: Player.Info) {
 		this.name = value.name
-		this.urlPattern = value.urlPattern
-		this.urlRegex = new RegExp(value.urlPattern, "g")
 		this.graph.setDataset(value.nodes)
 	}
 
 	/** Number of seconds that the content has been playing */
 	public async elapsedTime(): Promise<number> {
-		if(this.mediaNode)
+		if(this.playerResultNode)
 			return await this.execute<number>(`
-				let e = document.querySelector("${this.mediaNode.getOption("selectors")}")
+				let e = document.querySelector("${this.playerResultNode.getInput<string>("mediaSelectors")}")
 
 				return e.currentTime
 			`)
@@ -59,9 +55,9 @@ export class Player extends Helper {
 
 	/** Number of seconds that the content lasts */
 	public async duration(): Promise<number> {
-		if(this.mediaNode)
+		if(this.playerResultNode)
 			return await this.execute<number>(`
-				let e = document.querySelector("${this.mediaNode.getOption("selectors")}")
+				let e = document.querySelector("${this.playerResultNode.getInput<string>("mediaSelectors")}")
 
 				return e.duration
 			`)
@@ -71,9 +67,9 @@ export class Player extends Helper {
 
 	/** Whether the media is currently playing */
 	public async isPlaying(): Promise<boolean> {
-		if(this.mediaNode)
+		if(this.playerResultNode)
 			return await this.execute<boolean>(`
-				let e = document.querySelector("${this.mediaNode.getOption("selectors")}")
+				let e = document.querySelector("${this.playerResultNode.getInput<string>("mediaSelectors")}")
 
 				return !e.paused
 			`)
@@ -85,9 +81,9 @@ export class Player extends Helper {
 	 * Resume the media
 	 */
 	public async resume(): Promise<void> {
-		if(this.mediaNode) {
+		if(this.playerResultNode) {
 			await this.execute(`
-				let e = document.querySelector("${this.mediaNode.getOption("selectors")}")
+				let e = document.querySelector("${this.playerResultNode.getInput<string>("mediaSelectors")}")
 				e.play()
 			`)
 		}
@@ -97,9 +93,9 @@ export class Player extends Helper {
 	 * Pause the media
 	 */
 	public async pause(): Promise<void> {
-		if(this.mediaNode) {
+		if(this.playerResultNode) {
 			await this.execute(`
-				let e = document.querySelector("${this.mediaNode.getOption("selectors")}")
+				let e = document.querySelector("${this.playerResultNode.getInput<string>("mediaSelectors")}")
 				e.pause()
 			`)
 		}
@@ -109,9 +105,9 @@ export class Player extends Helper {
 	 * Toggle the media's to play/pause state
 	 */
 	public async togglePlay(): Promise<void> {
-		if(this.mediaNode) {
+		if(this.playerResultNode) {
 			await this.execute(`
-				let e = document.querySelector("${this.mediaNode.getOption("selectors")}")
+				let e = document.querySelector("${this.playerResultNode.getInput<string>("mediaSelectors")}")
 				
 				if(e.paused)
 					e.play()
@@ -125,12 +121,21 @@ export class Player extends Helper {
 	 * Enables detection media events and values on the webview
 	 */
 	public async bind(): Promise<void> {
+		for(let node of this.graph)
+			if(node instanceof PlayerNode)
+				node.setInput("url", this.view.getURL())
+
 		await this.graph.walk()
 
-		this.mediaNode = [...this.graph].find(n => n instanceof MediaNode)
+		this.playerResultNode = [...this.graph].find(n => n instanceof PlayerResultNode)
 
-		if(this.mediaNode) {
-			this.view.addEventListener("ipc-message", async e => {
+		if(this.playerResultNode) {
+			let messageListener: (e: any) => Promise<void>
+
+			this.view.addEventListener("ipc-message", messageListener = async e => {
+				if(e.channel != "playerMessage")
+					return
+
 				switch(e.args[0]) {
 					case "play":
 						await this.events.fire("play")
@@ -139,16 +144,42 @@ export class Player extends Helper {
 						await this.events.fire("pause")
 						break
 					case "end":
+						this.view.removeEventListener("ipc-message", messageListener)
 						await this.events.fire("end")
+						break
+					default:
+						console.error("Unexpected message", e.args[0])
 						break
 				}
 			})
 
+			let mediaSelectors = this.playerResultNode.getInput<string>("mediaSelectors")
+			let adSelectors = this.playerResultNode.getInput<string>("adSelectors")
+
 			await this.execute(`
-				let e = document.querySelector("${this.mediaNode.getOption("selectors")}")
-				e.addEventListener("play", () => noise.send("play"))
-				e.addEventListener("pause", () => noise.send("pause"))
-				e.addEventListener("ended", () => noise.send("end"))
+				let media = document.querySelector("${mediaSelectors}")
+				let isAd = false
+
+				media.addEventListener("play", () => noise.send("play"))
+				media.addEventListener("pause", () => noise.send("pause"))
+
+				${
+					adSelectors ?
+						`media.addEventListener("timeupdate", () => {
+							if(media.currentTime != media.duration || isNaN(media.duration))
+								return
+		
+							isAd = document.querySelector("${adSelectors}") != null
+						})` :
+						""
+				}
+
+				media.addEventListener("ended", () => {
+					if(isAd)
+						return
+
+					noise.send("end")
+				})
 			`)
 		}
 	}
@@ -165,17 +196,18 @@ export class Player extends Helper {
 		await fs.unlink(this.path)
 	}
 
-	public async duplicate(): Promise<Player> {
+	public async duplicate(name?: string): Promise<Player> {
 		let players = await Player.all()
 		let names = new Set<string>(players.map(p => p.name))
 
-		let name: string
-		let index = 0
+		if(!name) {
+			let index = 0
 
-		do {
-			++index
-			name = `${this.name} - Copy (${index})`
-		} while(names.has(name))
+			do {
+				++index
+				name = `${this.name} - Copy (${index})`
+			} while(names.has(name))
+		}
 
 		let info = JSON.parse(JSON.stringify(this.info)) as Player.Info
 		info.name = name
@@ -209,7 +241,11 @@ export class Player extends Helper {
 	public static async for(view: WebviewTag): Promise<Player> {
 		//Find first matching player
 		for await (let player of this) {
-			if(!player.urlRegex.test(view.getURL()))
+			//RegEx pattern to determine whether the URL is compatible with this player
+			let playerResultNode = [...player.graph].find(n => n instanceof PlayerResultNode)
+			let urlRegex = new RegExp(playerResultNode.getOption("urlPattern"), "g")
+
+			if(!urlRegex.test(view.getURL()))
 				continue
 
 			//Associate with webview
@@ -275,11 +311,6 @@ export namespace Player {
 		 * Website name displayed to the user
 		 */
 		name: string
-
-		/**
-		 * RegEx pattern to determine whether the URL is compatible with this player
-		 */
-		urlPattern: string
 
 		nodes: Nodes
 	}

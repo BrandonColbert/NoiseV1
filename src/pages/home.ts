@@ -1,3 +1,4 @@
+import { WebviewTag } from "electron"
 import Courier from "../core/courier.js"
 import Playlist from "../core/playlist.js"
 import PlaybackView from "../ui/views/playbackView.js"

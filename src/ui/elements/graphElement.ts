@@ -122,6 +122,13 @@ export class GraphElement extends UIElement {
 	}
 
 	private onStartPan = (startEvent: MouseEvent) => {
+		switch(startEvent.button) {
+			case 0:
+				break
+			default:
+				return
+		}
+
 		let [panX, panY] = this.pan
 
 		this.onPan = moveEvent => {

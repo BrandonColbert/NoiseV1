@@ -9,7 +9,10 @@ export default class OptionFieldElement extends FieldElement {
 	public constructor(name: string) {
 		super(name)
 		this.append(this.displayName = document.createElement("div"))
-		this.append(this.inputText = document.createElement("input"))
+
+		this.inputText = document.createElement("input")
+		this.inputText.spellcheck = false
+		this.append(this.inputText)
 	}
 
 	protected override attached(): void {

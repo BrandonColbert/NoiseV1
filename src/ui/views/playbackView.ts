@@ -87,12 +87,12 @@ export class PlaybackView extends Playback implements View {
 		let courier = item.courier ? await Courier.load(item.courier) : this.views.playlistView.views.entrybarView.courier
 
 		if(!courier)
-			throw new Error(`Unable to find courier for item ${item}`)
+			throw new Error(`Unable to find courier for item ${JSON.stringify(item)}`)
 
 		let result = await courier.find(item.query)
 
 		if(!result)
-			throw new Error(`Unable to find media for item ${item}`)
+			throw new Error(`Unable to find media for item ${JSON.stringify(item)}`)
 
 		await this.views.playerView.navigate(result.url)
 		await this.views.playerView.player.resume()

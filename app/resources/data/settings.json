@@ -9,8 +9,9 @@
 		"primary-variant": "slateblue",
 		"text": "#e6dbdb"
 	},
-	"defaultCourier": "",
-	"recency": 5000,
-	"thresholdWait": 5,
-	"thresholdAbort": 50
+	"fetching": {
+		"recency": 5000,
+		"thresholdWait": 5,
+		"thresholdAbort": 50
+	}
 }

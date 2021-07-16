@@ -193,7 +193,7 @@ export class PlaylistView implements View {
 				this.playlist = playlists[playlists.length - 1]
 			}},
 			{text: "View helpers", callback: async () => await remote.getCurrentWindow().loadFile("app/helpers.html")},
-			{text: "Edit settings"},
+			{text: "Edit settings", callback: async () => await remote.getCurrentWindow().loadFile("app/settings.html")},
 			{text: "Inspect player", callback: () => this.playbackView.views.playerView.element.openDevTools()}
 		], {target: event.target as Element})
 	}

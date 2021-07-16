@@ -21,19 +21,24 @@ function addItem(items: Element, name: string): HTMLDivElement {
 function addHelper(helper: Helper): HTMLDivElement {
 	let items: Element
 	let hash: string
+	let title: string
 
 	switch(true) {
 		case helper instanceof Courier:
+			let courier = helper as Courier
 			items = courierItems
-			hash = `courier:${(helper as Courier).id}`
+			hash = `courier:${courier.id}`
+			title = courier.id
 			break
 		case helper instanceof Player:
+			let player = helper as Player
 			items = playerItems
-			hash = `player:${(helper as Player).id}`
+			hash = `player:${player.id}`
 			break
 	}
 
 	let item = addItem(items, helper.name)
+	item.title = title ?? ""
 
 	item.onclick = async _ => await remote.getCurrentWindow().loadFile(
 		"app/descriptor.html",
@@ -55,8 +60,24 @@ function addHelper(helper: Helper): HTMLDivElement {
 					return
 				}
 
-				helper.name = newName
-				helper.save()
+				switch(true) {
+					case helper instanceof Courier:
+						let index = [...item.parentElement.children].indexOf(item)
+						let courier = await (helper as Courier).duplicate(newName)
+
+						if(!courier)
+							break
+
+						item.remove()
+						await helper.delete()
+
+						items.insertBefore(addHelper(courier), items.children[index])
+						break
+					case helper instanceof Player:
+						;(helper as Player).name = newName
+						helper.save()
+						break
+				}
 			}},
 			{text: "Duplicate", callback: async () => {
 				let newHelper = await helper.duplicate()

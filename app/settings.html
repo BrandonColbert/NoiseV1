@@ -1,0 +1,68 @@
+<html>
+	<head>
+		<base href="./">
+		<link rel="stylesheet" type="text/css" href="./css/settings/style.css">
+		<title>Noise - Settings</title>
+	</head>
+	<body>
+		<div id="content">
+			<button id="back" class="iconic"></button>
+			<text id="title">Noise</text>
+			<div>
+				<h1>Theme Palette</h1>
+				<div class="options">
+					<div>
+						<text>Primary Color</text>
+						<input type="text" id="primary" spellcheck="false">
+					</div>
+					<div>
+						<text>Primary Variant Color</text>
+						<input type="text" id="primary-variant" spellcheck="false">
+					</div>
+					<div>
+						<text>Accent Color</text>
+						<input type="text" id="accent" spellcheck="false">
+					</div>
+					<div>
+						<text>Accent Variant Color</text>
+						<input type="text" id="accent-variant" spellcheck="false">
+					</div>
+					<div>
+						<text>Background Color</text>
+						<input type="text" id="background" spellcheck="false">
+					</div>
+					<div>
+						<text>Foreground Color</text>
+						<input type="text" id="foreground" spellcheck="false">
+					</div>
+					<div>
+						<text>Foreground Variant</text>
+						<input type="text" id="foreground-variant" spellcheck="false">
+					</div>
+					<div>
+						<text>Text Color</text>
+						<input type="text" id="text" spellcheck="false">
+					</div>
+				</form>
+			</div>
+			<div>
+				<h1>Content Fetching</h1>
+				<div class="options">
+					<div>
+						<text title="Duration in milliseconds to remember search times">Recency Timer (ms)</text>
+						<input type="number" id="recency">
+					</div>
+					<div>
+						<text title="Maximum number of searches within 'recency' seconds before waiting">Wait Threshold (s)</text>
+						<input type="number" id="threshold-wait">
+					</div>
+					<div>
+						<text title="Maximum number of searches within 'recency' seconds before aborting">Abort Threshold (s)</text>
+						<input type="number" id="threshold-abort">
+					</div>
+				</form>
+			</div>
+		</div>
+		<script>require("./js/pages/settings.js")</script>
+	</body>
+</html>

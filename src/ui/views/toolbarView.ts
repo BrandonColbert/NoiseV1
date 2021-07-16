@@ -141,7 +141,6 @@ export class ToolbarView implements View {
 	}
 
 	private onVolumeIconClick = () => {
-		console.log(this.muted)
 		this.muted = !this.muted
 
 		this.#volume.setMuted(this.muted)
