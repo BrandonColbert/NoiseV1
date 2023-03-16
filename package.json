@@ -1,6 +1,6 @@
 {
 	"name": "noise",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Configurable playlist creator",
 	"author": "Brandon Colbert",
 	"url": "https://brandoncolbert.github.io/projects/noise.html",
@@ -9,19 +9,24 @@
 	"main": "app/js/main.js",
 	"scripts": {
 		"start": "electron .",
-		"build": "tsc && addons\\build.bat",
-		"clean": "rmdir app\\js /S /Q",
+		"dist": "electron-builder",
 		"pack": "electron-builder --dir",
-		"dist": "electron-builder"
+		"build-win": "scripts\\windows\\build.bat",
+		"clean-win": "scripts\\windows\\clean.bat",
+		"build-linux": "scripts/linux/build.sh",
+		"clean-linux": "scripts/linux/clean.sh"
 	},
 	"build": {
 		"productName": "Noise",
 		"appId": "exn.database.noise",
 		"win": {
-			"target": [
-				"portable"
-			],
+			"target": "portable",
 			"icon": "app/resources/icons/icon.png"
+		},
+		"linux": {
+			"target": "AppImage",
+			"icon": "app/resources/icons/icon.png",
+			"category": "AudioVideo"
 		},
 		"portable": {
 			"artifactName": "${productName} ${version}.${ext}"
@@ -46,8 +51,10 @@
 	},
 	"devDependencies": {
 		"@types/uuid": "^8.3.0",
-		"electron": "^13.1.6",
-		"electron-builder": "^22.10.5"
+		"electron": "^13.5.1",
+		"electron-builder": "^22.11.7",
+		"node-gyp": "^8.2.0",
+		"typescript": "^4.4.3"
 	},
 	"dependencies": {
 		"filenamify": "^4.3.0",

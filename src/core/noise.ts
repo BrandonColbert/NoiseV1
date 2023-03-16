@@ -1,4 +1,4 @@
-import {app, remote} from "electron"
+import electron from "electron"
 import {promises as fs} from "fs"
 import path from "path"
 
@@ -34,9 +34,19 @@ export namespace Noise {
 		 * Directory containing the executable or project
 		 */
 		public static get application(): string {
-			return process.env.PORTABLE_EXECUTABLE_DIR
-				?? app?.getAppPath()
-				?? remote?.app?.getAppPath()
+			//Dev environment
+			if(process.env.PORTABLE_EXECUTABLE_DIR)
+				return process.env.PORTABLE_EXECUTABLE_DIR
+
+			//Build environment (portable)
+			let app = electron.app ?? electron.remote?.app
+
+			switch(process.platform) {
+				case "linux":
+					return path.resolve(".")
+				default:
+					return app.getAppPath()
+			}
 		}
 
 		/**
